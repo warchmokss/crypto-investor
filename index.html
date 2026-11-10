@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071326">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <title>CRYPTO INVESTOR</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">CRYPTO <span>INVESTOR</span></div>
+    <nav>
+      <button class="nav-btn active" data-page="home">Главная</button>
+      <button class="nav-btn" data-page="business">Бизнес</button>
+      <button class="nav-btn" data-page="garage">Гараж</button>
+      <button class="nav-btn" data-page="donate">Донат</button>
+      <button class="nav-btn" data-page="upgrade">Апгрейд</button>
+      <button class="nav-btn" data-page="bets">Ставки</button>
+      <button class="nav-btn" data-page="exchange">Обменник</button>
+      <button class="nav-btn" data-page="crosswords">Кроссворды</button>
+      <button class="nav-btn" data-page="transfers">Переводы</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="page active">
+      <div class="hero">
+        <p class="eyebrow">ТВОЯ КРИПТО-ИГРА</p>
+        <h1>Добро пожаловать в <span>CRYPTO INVESTOR</span></h1>
+        <p class="muted">Нажимай, копи монеты и получай бонусы.</p>
+      </div>
+
+      <div class="balance-card">
+        <p class="muted">ТВОЙ БАЛАНС</p>
+        <div class="balance"><span id="balance">0</span> ₽</div>
+      </div>
+
+      <div class="tap-area">
+        <button id="tapButton" class="tap-button" aria-label="Получить 50 рублей">
+          <span class="coin">₿</span>
+          <small>+50 ₽ за нажатие</small>
+        </button>
+        <p id="tapMessage" class="message" aria-live="polite">Нажми на монету, чтобы начать!</p>
+        <p class="counter">Всего нажатий: <b id="tapCount">0</b></p>
+        <p id="saveStatus" class="save-status" aria-live="polite">Подключение к игровому серверу...</p>
+      </div>
+
+      <div class="info-grid">
+        <article class="info-card">
+          <h3>💰 Бонус за 100 нажатий</h3>
+          <p>Каждое сотое нажатие приносит дополнительно <b>+500 ₽</b>. За тап начисляется 50 ₽.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="upgrade" class="page">
+      <div class="hero">
+        <p class="eyebrow">РАЗВИТИЕ И ПРОКАЧКА</p>
+        <h1>Твои <span>апгрейды</span></h1>
+        <p class="muted">Усиливай нажатия и развивай своё имущество.</p>
+      </div>
+      <div class="section-balance">Твой баланс: <b id="upgradeBalance">0 ₽</b></div>
+      <h2>⚡ Улучшение нажатий</h2>
+      <div id="upgradeGrid" class="shop-grid"></div>
+      <h2 class="owned-heading">🏦 Апгрейд имущества</h2>
+      <p class="upgrade-note">Выбирай купленные машины, бизнесы и недвижимость. Улучшение гарантированное: актив остаётся у тебя, а его доход увеличивается на 25%. Игровая валюта и имущество не ставятся на случайный риск.</p>
+      <div id="propertyUpgradeGrid" class="shop-grid"></div>
+    </section>
+
+    <section id="business" class="page">
+      <div class="hero">
+        <p class="eyebrow">ТВОЯ ИМПЕРИЯ</p>
+        <h1>Покупай и развивай <span>бизнес</span></h1>
+        <p class="muted">Приобретай имущество и получай игровой доход каждую минуту.</p>
+      </div>
+      <div class="section-balance">Твой баланс: <b id="businessBalance">0 ₽</b> <span class="income-label">Доход: <b id="passiveIncome">0 ₽/мин</b></span></div>
+      <div class="category-tabs" id="businessCategories">
+        <button class="category-btn active" data-category="cars">🚗 Машины</button>
+        <button class="category-btn" data-category="businesses">🏢 Бизнесы</button>
+        <button class="category-btn" data-category="stalls">🛍️ Прилавки</button>
+        <button class="category-btn" data-category="apartments">🏠 Квартиры</button>
+      </div>
+      <div id="businessGrid" class="shop-grid"></div>
+      <p class="muted trade-note">Продажа возвращает 70% первоначальной стоимости. Доход от актива начисляется, пока он у тебя.</p>
+    </section>
+
+    <section id="garage" class="page">
+      <div class="hero"><p class="eyebrow">ТВОЁ ИМУЩЕСТВО</p><h1>Мой <span>гараж</span></h1><p class="muted">Все купленные автомобили, квартиры и объекты бизнеса в одном месте.</p></div>
+      <div class="garage-tiles">
+        <button class="garage-tile active" data-garage="cars"><span>🚗</span><b>Автомобили</b><small id="garageCountCars">0 объектов</small></button>
+        <button class="garage-tile" data-garage="apartments"><span>🏠</span><b>Недвижимость</b><small id="garageCountApartments">0 объектов</small></button>
+        <button class="garage-tile" data-garage="businesses"><span>🏢</span><b>Собственность</b><small id="garageCountBusinesses">0 объектов</small></button>
+        <button class="garage-tile" data-garage="stalls"><span>🛍️</span><b>Торговые площадки</b><small id="garageCountStalls">0 объектов</small></button>
+      </div>
+      <h2 id="garageTitle">🚗 Автомобили</h2><div id="garageGrid" class="shop-grid"></div>
+    </section>
+
+
+    <section id="exchange" class="page">
+      <div class="hero">
+        <p class="eyebrow">КУРСЫ И КОНВЕРТАЦИЯ</p>
+        <h1>Валютный <span>обменник</span></h1>
+        <p class="muted">Обменивай любую из доступных валют на любую другую.</p>
+      </div>
+      <div class="section-balance">Твой игровой баланс: <b id="exchangeBalance">0 ₽</b></div>
+      <div class="exchange-card">
+        <label class="game-label" for="exchangeAmount">Отдаёшь</label>
+        <input id="exchangeAmount" class="exchange-input" type="number" min="0" step="any" value="1000" inputmode="decimal" placeholder="Введи сумму">
+        <select id="exchangeFrom" class="exchange-select" aria-label="Исходная валюта">
+          <option value="RUB">🇷🇺 Российский рубль (RUB)</option>
+          <option value="USD">🇺🇸 Доллар США (USD)</option>
+          <option value="EUR">🇪🇺 Евро (EUR)</option>
+          <option value="KZT">🇰🇿 Казахстанский тенге (KZT)</option>
+          <option value="BYN">🇧🇾 Белорусский рубль (BYN)</option>
+          <option value="BTC">₿ Биткоин (BTC)</option>
+        </select>
+        <div class="exchange-swap-row"><button id="exchangeSwap" class="game-action" type="button" aria-label="Поменять валюты местами">⇅ Поменять валюты местами</button></div>
+        <label class="game-label" for="exchangeTo">Получаешь</label>
+        <select id="exchangeTo" class="exchange-select">
+          <option value="RUB">🇷🇺 Российский рубль (RUB)</option>
+          <option value="USD" selected>🇺🇸 Доллар США (USD)</option>
+          <option value="EUR">🇪🇺 Евро (EUR)</option>
+          <option value="KZT">🇰🇿 Казахстанский тенге (KZT)</option>
+          <option value="BYN">🇧🇾 Белорусский рубль (BYN)</option>
+          <option value="BTC">₿ Биткоин (BTC)</option>
+        </select>
+        <div class="exchange-result">
+          <span class="muted">Результат обмена</span>
+          <strong id="exchangeOutput">Загрузка курса…</strong>
+          <small id="exchangeRate" class="muted">Получаем актуальные курсы</small>
+        </div>
+        <p id="exchangeStatus" class="exchange-status" aria-live="polite">Курсы обновляются автоматически.</p>
+        <button id="exchangeRefresh" class="game-action" type="button">Обновить курсы</button>
+      </div>
+      <p class="game-disclaimer">Калькулятор показывает справочный пересчёт по рыночным курсам. Реальный перевод или покупка валюты не выполняются.</p>
+    </section>
+
+
+    <section id="crosswords" class="page">
+      <div class="hero"><p class="eyebrow">ТРЕНИРУЙ СООБРАЗИТЕЛЬНОСТЬ</p><h1>Словесные <span>кроссворды</span></h1><p class="muted">Реши все слова по подсказкам и получи 5 000 игровых рублей.</p></div>
+      <div class="section-balance">Твой баланс: <b id="crosswordBalance">0 ₽</b><span class="income-label">Награда: <b>5 000 ₽</b></span></div>
+      <div class="exchange-card crossword-card">
+        <div class="category-tabs"><button class="category-btn active" data-cross-level="easy">🟢 Лёгкий</button><button class="category-btn" data-cross-level="medium">🟡 Средний</button></div>
+        <h2 id="crosswordTitle">Лёгкий уровень</h2><p class="muted" id="crosswordHelp">Впиши ответы на все подсказки.</p>
+        <div id="crosswordClues" class="crossword-clues"></div>
+        <button id="crosswordCheck" class="game-action">Проверить ответы</button>
+        <p id="crosswordResult" class="game-result" aria-live="polite">Удачи!</p>
+        <button id="crosswordNew" class="game-action secondary">Новый кроссворд</button>
+        <small class="muted crossword-note">Чтобы награда не фармилась бесконечно, новый призовой раунд доступен раз в 10 минут. Прогресс кроссворда хранится в этом браузере.</small>
+      </div>
+    </section>
+
+    <section id="transfers" class="page">
+      <div class="hero"><p class="eyebrow">ПЕРЕВОДЫ МЕЖДУ ИГРОКАМИ</p><h1>Перевод <span>рублей</span></h1><p class="muted">Отправляй игровые рубли игроку Telegram по его username.</p></div>
+      <div class="section-balance">Твой баланс: <b id="transferBalance">0 ₽</b></div>
+      <div class="exchange-card">
+        <label class="game-label" for="transferUsername">Юзернейм получателя Telegram</label>
+        <input class="exchange-input" id="transferUsername" type="text" maxlength="32" placeholder="@username" autocomplete="off">
+        <label class="game-label" for="transferAmount">Сумма перевода (₽)</label>
+        <input class="exchange-input" id="transferAmount" type="number" min="1" step="1" placeholder="Например, 1000">
+        <button class="game-action" id="transferSend">Отправить перевод</button>
+        <p id="transferStatus" class="game-result" aria-live="polite">Проверяй юзернейм перед отправкой.</p>
+      </div>
+      <p class="game-disclaimer">Переводятся только игровые рубли внутри этого приложения. Это не банковский перевод и не перевод реальных денег. Для работы между разными Telegram-аккаунтами нужен запущенный сервер приложения и зарегистрированный получатель.</p>
+    </section>
+
+    <section id="bets" class="page">
+      <div class="hero">
+        <p class="eyebrow">АРКАДНЫЕ ИГРЫ</p>
+        <h1>Игровая <span>комната</span></h1>
+        <p class="muted">Только виртуальные ₽ внутри демо-игры. Вывод и реальные платежи не поддерживаются.</p>
+      </div>
+      <div class="section-balance">Игровой баланс: <b id="betBalance">0 ₽</b><span class="income-label" id="betMode">Демо-режим</span></div>
+      <div class="game-tabs">
+        <button class="category-btn active" data-game-tab="coin">🪙 Монетка</button>
+        <button class="category-btn" data-game-tab="quick">⚡ Быстрый матч</button>
+        <button class="category-btn" data-game-tab="blackjack">🃏 21</button>
+      </div>
+      <section class="game-panel active" id="game-coin">
+        <h2>🪙 Орёл или решка</h2><p class="muted">Выбери сторону и коэффициент. Угадал — получаешь выплату по коэффициенту.</p>
+        <div class="coin-stage"><div class="game-coin" id="coinVisual">₿</div></div>
+        <div class="choice-row"><button class="choice-btn" data-side="heads">Орёл</button><button class="choice-btn" data-side="tails">Решка</button></div>
+        <label class="game-label">Ставка, ₽ <input id="coinStake" type="number" min="1" value="500"></label>
+        <label class="game-label">Коэффициент <select id="coinOdds"><option value="1.5">1.50×</option><option value="1.9" selected>1.90×</option><option value="2.5">2.50×</option><option value="3">3.00×</option><option value="5">5.00×</option><option value="7.5">7.50×</option><option value="10">10.00×</option><option value="15">15.00×</option><option value="25">25.00×</option><option value="50">50.00×</option></select></label>
+        <button class="game-action" id="coinPlay">Подбросить монету</button><p class="game-result" id="coinResult">Выбери Орёл или Решка.</p>
+      </section>
+      <section class="game-panel" id="game-quick">
+        <h2>⚡ Быстрый матч</h2><p class="muted">Генератор случайно создаёт матч и мгновенно показывает результат. Победа — x1.9, поражение — ставка сгорает.</p>
+        <div class="match-card"><div class="match-team" id="teamA">🟢 Север</div><b>VS</b><div class="match-team" id="teamB">🔵 Юг</div></div>
+        <label class="game-label">Ставка, ₽ <input id="quickStake" type="number" min="1" value="500"></label>
+        <button class="game-action" id="quickPlay">Сгенерировать матч</button><p class="game-result" id="quickResult">Матч ещё не начался.</p>
+      </section>
+      <section class="game-panel" id="game-blackjack">
+        <h2>🃏 Игра в 21</h2><p class="muted">Набери ближе к 21, чем дилер, не перебрав. Победа — x2, ничья — возврат.</p>
+        <div class="blackjack-table"><div>Дилер: <b id="dealerCards">—</b> <span id="dealerScore"></span></div><div>Ты: <b id="playerCards">—</b> <span id="playerScore"></span></div></div>
+        <label class="game-label">Ставка, ₽ <input id="bjStake" type="number" min="1" value="500"></label>
+        <button class="game-action" id="bjStart">Начать раунд</button><button class="game-action secondary" id="bjHit" disabled>Ещё карту</button><button class="game-action secondary" id="bjStand" disabled>Хватит</button>
+        <p class="game-result" id="bjResult">Нажми «Начать раунд».</p>
+      </section>
+      <p class="game-disclaimer">Игры работают на виртуальном балансе и не являются онлайн-ставками на деньги. Результаты локальные, синхронизация ставок между пользователями и серверная игровая система не подключены.</p>
+    </section>
+
+    <section id="donate" class="page">
+      <div class="hero">
+        <p class="eyebrow">ПОДДЕРЖКА ПРОЕКТА</p>
+        <h1>Магазин <span>монет</span></h1>
+        <p class="muted">Платежи пока не подключены. Не отправляй деньги за игровые монеты.</p>
+      </div>
+      <div class="donate-card">
+        <div class="donate-icon">◆</div>
+        <h2>100 000 монет</h2>
+        <p class="price">5 ₽</p>
+        <button id="buyButton" class="buy-button">Купить</button>
+        <p id="buyMessage" class="message">Оплата пока недоступна.</p>
+        <small>Это демонстрационный макет. Реальные платежи не подключены.</small>
+      </div>
+    </section>
+  </main>
+
+  <div id="goldStars" class="gold-stars" aria-hidden="true"></div>
+  <div id="fireworks" class="fireworks" aria-hidden="true"></div>
+  <div id="bonusPopup" class="bonus-popup" role="status" aria-live="polite"></div>
+  <footer>CRYPTO INVESTOR · Telegram Mini App</footer>
+  <script src="script.js"></script>
+</body>
+</html>

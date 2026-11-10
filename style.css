@@ -1,0 +1,182 @@
+* { box-sizing: border-box; }
+:root { color-scheme: dark; }
+body {
+  margin: 0; min-height: 100vh; color: #f4f7ff;
+  font-family: Arial, Helvetica, sans-serif;
+  background: radial-gradient(circle at 50% 0%, #173b70 0, #09172e 42%, #050b18 100%);
+}
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px max(5vw, 20px); border-bottom: 1px solid #ffffff18;
+  background: #071326aa; position: sticky; top: 0; z-index: 5; backdrop-filter: blur(12px);
+}
+.logo { font-size: 24px; font-weight: 800; letter-spacing: -.7px; }
+.logo span, h1 span { color: #48c7ff; }
+nav { display: flex; gap: 10px; }
+button { font: inherit; cursor: pointer; }
+.nav-btn {
+  border: 1px solid transparent; border-radius: 10px; padding: 10px 16px;
+  color: #c8d7ef; background: transparent;
+}
+.nav-btn.active, .nav-btn:hover { background: #17365e; border-color: #2d6499; color: white; }
+main { width: min(900px, 90%); margin: 0 auto; padding: 42px 0 70px; }
+.page { display: none; }
+.page.active { display: block; }
+.hero { text-align: center; margin: 15px 0 32px; }
+.eyebrow { color: #54caff; font-size: 11px; letter-spacing: 3px; font-weight: bold; }
+h1 { font-size: clamp(28px, 5vw, 44px); margin: 12px 0; }
+.muted { color: #9eb2ce; }
+.balance-card, .info-card, .donate-card {
+  border: 1px solid #ffffff20; border-radius: 20px;
+  background: linear-gradient(135deg, #142c4d, #0d1c33);
+  box-shadow: 0 16px 45px #0004;
+}
+.balance-card { text-align: center; padding: 26px; position: relative; }
+.balance { font-size: clamp(38px, 8vw, 58px); font-weight: 800; margin: 8px 0 14px; }
+.tap-area { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 34px 0 26px; }
+.tap-button {
+  width: 190px; height: 190px; border: 5px solid #70d7ff;
+  border-radius: 50%; color: white; background: radial-gradient(circle at 35% 25%, #42bfff, #1455a2 65%, #0a2b5b);
+  box-shadow: 0 0 0 12px #37baff16, 0 15px 45px #168de966;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transition: transform .12s, filter .12s;
+}
+.tap-button:active { transform: scale(.94); filter: brightness(1.2); }
+.coin { font-size: 58px; line-height: 1.1; }
+.tap-button small { color: #d8f2ff; font-size: 14px; margin-top: 7px; }
+.message { color: #68d5ff; min-height: 22px; }
+.counter { color: #9eb2ce; }
+.save-status { color: #6885a8; font-size: 12px; min-height: 16px; }
+.info-grid { display: grid; grid-template-columns: minmax(0, 430px); justify-content: center; }
+.info-card { padding: 20px; }
+.info-card h3 { margin-top: 0; }
+.info-card p { color: #aebed4; line-height: 1.5; }
+.donate-card { max-width: 430px; margin: 0 auto; padding: 32px; text-align: center; }
+.donate-icon { font-size: 46px; color: #55ceff; }
+.donate-card h2 { margin-bottom: 4px; }
+.price { font-size: 34px; font-weight: 800; margin: 10px; }
+.buy-button { width: 100%; border: 0; border-radius: 12px; padding: 14px; color: #061326; font-weight: 800; background: #58ceff; }
+.donate-card small { color: #8298b7; line-height: 1.5; }
+footer { text-align: center; color: #607895; padding: 20px; border-top: 1px solid #ffffff12; }
+.fireworks { position: fixed; inset: 0; z-index: 20; pointer-events: none; overflow: hidden; display: none; }
+.fireworks.show { display: block; }
+.spark {
+  position: absolute; width: 7px; height: 7px; border-radius: 50%;
+  background: hsl(var(--hue), 100%, 65%); box-shadow: 0 0 12px hsl(var(--hue), 100%, 65%);
+  animation: burst 1.25s ease-out forwards;
+}
+@keyframes burst {
+  0% { opacity: 1; transform: translate(0, 0) scale(.4); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.5); }
+}
+.bonus-popup {
+  position: fixed; z-index: 21; left: 50%; top: 18%; transform: translate(-50%, -20px) scale(.8);
+  width: max-content; max-width: 90vw; padding: 18px 24px; border-radius: 16px;
+  color: #fff; text-align: center; font-size: clamp(17px, 4vw, 25px); font-weight: 900;
+  background: linear-gradient(120deg, #155b9c, #713da5); border: 1px solid #9ceaff;
+  box-shadow: 0 0 35px #4bcaff99; opacity: 0; pointer-events: none;
+}
+.bonus-popup.show { animation: popup-in 2.6s ease both; }
+@keyframes popup-in {
+  0% { opacity: 0; transform: translate(-50%, -20px) scale(.8); }
+  12%, 78% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -10px) scale(.95); }
+}
+@media (max-width: 600px) {
+  .topbar { padding: 15px; } .logo { font-size: 20px; }
+  .nav-btn { padding: 9px 11px; }
+  main { padding-top: 25px; }
+  .tap-button { width: 175px; height: 175px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Магазины, апгрейды и бизнес */
+.section-balance { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 22px; padding:16px 20px; border:1px solid #ffffff20; border-radius:14px; background:#102747; color:#b9cce4; }
+.section-balance b { color:#72dcff; }
+.income-label { margin-left:auto; }
+.category-tabs { display:flex; flex-wrap:wrap; justify-content:center; gap:9px; margin:0 0 22px; }
+.category-btn { padding:10px 15px; border:1px solid #ffffff25; border-radius:11px; color:#cbdcf2; background:#102747; }
+.category-btn.active,.category-btn:hover { color:white; background:#1c5688; border-color:#55caff; }
+.shop-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+.shop-card { display:flex; flex-direction:column; min-height:255px; padding:21px; border:1px solid #ffffff20; border-radius:18px; background:linear-gradient(145deg,#17375f,#0b1a30); box-shadow:0 12px 30px #0003; }
+.shop-icon { font-size:38px; }
+.shop-card h3 { margin:12px 0 8px; }
+.shop-card p { flex:1; color:#aebed4; line-height:1.45; margin:0 0 14px; }
+.item-income { color:#73ddff; font-weight:700; margin-bottom:14px; }
+.shop-buy { width:100%; padding:12px 10px; border:0; border-radius:10px; color:#061326; background:#59ceff; font-weight:800; }
+.shop-buy:hover:not(:disabled) { filter:brightness(1.12); }
+.shop-buy:disabled { color:#91a5bf; background:#263c57; cursor:not-allowed; }
+.owned-heading { margin:34px 0 14px; }
+.owned-list { display:grid; gap:9px; }
+.owned-item { display:flex; justify-content:space-between; gap:12px; padding:14px 16px; border:1px solid #ffffff1c; border-radius:12px; background:#102747; }
+.owned-item b { color:#70dcff; white-space:nowrap; }
+@media(max-width:760px) {
+  .topbar { align-items:flex-start; gap:12px; flex-direction:column; }
+  nav { width:100%; flex-wrap:wrap; }
+  .nav-btn { padding:9px 11px; }
+  .section-balance { align-items:flex-start; flex-direction:column; }
+  .income-label { margin-left:0; }
+}
+.upgrade-note { max-width: 760px; margin: -10px auto 22px; padding: 15px 18px; border: 1px solid #55caff44; border-radius: 13px; background: #102747; color: #b9cce4; line-height: 1.55; text-align: center; }
+#upgrade h2 { margin: 28px 0 15px; }
+
+/* Гараж и управление собственностью */
+.garage-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 28px}
+.garage-tile{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:125px;padding:17px;border:1px solid #ffffff24;border-radius:16px;color:#eaf4ff;background:linear-gradient(145deg,#17375f,#0b1a30);text-align:left;transition:.15s}
+.garage-tile>span{font-size:30px}.garage-tile b{font-size:14px}.garage-tile small{color:#8fa9c9}.garage-tile.active,.garage-tile:hover{border-color:#55caff;background:linear-gradient(145deg,#20558b,#102747);transform:translateY(-2px)}
+.trade-actions{display:grid;gap:8px;margin-top:auto}.shop-sell{width:100%;padding:12px 10px;border:1px solid #ffb36b88;border-radius:10px;color:#ffe2c2;background:#693b28;font-weight:800}.shop-sell:hover{background:#87492d}.trade-note{margin:15px 0 0;text-align:center}.empty-garage{grid-column:1/-1;padding:25px;text-align:center;border:1px dashed #ffffff35;border-radius:14px}
+@media(max-width:650px){.garage-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.garage-tile{min-height:110px;padding:14px}}
+
+/* Тёмная крипто-тема и игровые вкладки */
+body{background:#050807;color:#eef8f0}
+body:before{content:"₿";position:fixed;z-index:-1;left:50%;top:48%;transform:translate(-50%,-50%);font-size:min(76vw,620px);font-weight:900;color:#5bff8a;opacity:.075;filter:blur(9px);pointer-events:none}
+.logo span,h1 span{color:#55e889}
+.topbar{background:#050907dd;border-bottom-color:#55e88922}
+.nav-btn.active,.nav-btn:hover{background:#10351f;border-color:#2e9d55}
+.balance-card,.info-card,.donate-card,.shop-card{background:linear-gradient(145deg,#102219,#09120d);border-color:#55e88928}
+.tap-button{border-color:#64f394;background:radial-gradient(circle at 35% 25%,#3ce77b,#087b3a 68%,#04351d);box-shadow:0 0 0 12px #38e87812,0 15px 45px #16bd5c44}
+.tap-button small{color:#e2ffeb}
+.category-btn.active,.category-btn:hover{background:#124126;border-color:#55e889}
+.section-balance{background:#0b1b11}.section-balance b,.item-income{color:#70ee9a}
+.shop-buy,.buy-button{background:#55e889;color:#041008}
+.tap-float{position:fixed;z-index:30;pointer-events:none;color:#58f18d;font-size:13px;font-weight:800;text-shadow:0 0 12px #38ff80aa;animation:tapFloat .85s ease-out forwards}
+@keyframes tapFloat{0%{opacity:0;transform:translate(-50%,0) scale(.8)}20%{opacity:1}100%{opacity:0;transform:translate(-50%,-65px) scale(1.05)}}
+.game-tabs,.choice-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:18px 0}
+.game-panel{display:none;max-width:620px;margin:0 auto 18px;padding:24px;border:1px solid #55e88933;border-radius:20px;background:linear-gradient(145deg,#102219,#08120c);box-shadow:0 15px 40px #0006}
+.game-panel.active{display:block}.game-panel h2{text-align:center;margin-top:0}
+.game-panel .muted{text-align:center;line-height:1.5}
+.game-label{display:block;margin:14px 0;color:#a9cbb4;font-size:13px}
+.game-label input,.game-label select{display:block;width:100%;margin-top:7px;padding:13px;border-radius:10px;border:1px solid #4a805a;background:#07110a;color:#fff;font:inherit}
+.choice-btn,.game-action{border:1px solid #4bd77b;border-radius:11px;padding:12px 18px;background:#123c22;color:#eaffef;font-weight:800}
+.choice-btn.selected,.game-action{background:#35bd68;color:#041008}
+.game-action{width:100%;margin-top:12px}.game-action:disabled{opacity:.4;cursor:not-allowed}.game-action.secondary{width:calc(50% - 7px);margin-right:5px;background:#173323;color:#dfffea}
+.coin-stage{display:grid;place-items:center;padding:18px}
+.game-coin{width:105px;height:105px;border-radius:50%;display:grid;place-items:center;font-size:45px;color:#08200f;background:radial-gradient(circle at 35% 30%,#d7ffe1,#36c96c 65%,#12652f);box-shadow:0 0 30px #36df7866;border:5px solid #9bffb7}
+.game-coin.flip{animation:coinFlip .65s ease-in-out}
+@keyframes coinFlip{50%{transform:rotateY(900deg) scale(1.15)}}
+.game-result{min-height:28px;text-align:center;color:#70ee9a;font-weight:700;margin-bottom:0}
+.match-card{display:flex;align-items:center;justify-content:space-around;gap:10px;padding:22px;border-radius:14px;background:#07150c;margin:18px 0}
+.match-team{font-weight:800}.blackjack-table{display:grid;gap:14px;padding:20px;background:#07341f;border:1px solid #2c9b59;border-radius:14px;margin:16px 0;line-height:1.7}
+.game-disclaimer{max-width:620px;margin:18px auto;color:#789483;font-size:11px;line-height:1.5;text-align:center}
+@media(max-width:600px){.game-panel{padding:17px}.game-tabs .category-btn{flex:1}.match-card{font-size:13px}}
+
+
+/* Обменник */
+.exchange-card{max-width:620px;margin:0 auto;padding:24px;border:1px solid #55e88933;border-radius:20px;background:linear-gradient(145deg,#102219,#08120c);box-shadow:0 15px 40px #0006}
+.exchange-input,.exchange-select{display:block;width:100%;padding:15px 14px;border:1px solid #4a805a;border-radius:11px;background:#07110a;color:#fff;font:inherit;font-size:17px;outline:none}
+.exchange-input:focus,.exchange-select:focus{border-color:#55e889;box-shadow:0 0 0 3px #55e88920}
+.exchange-result{display:grid;gap:9px;margin-top:22px;padding:22px;border:1px solid #55e88935;border-radius:14px;background:#07150c;text-align:center}
+.exchange-result strong{font-size:clamp(27px,6vw,38px);color:#70ee9a;overflow-wrap:anywhere}
+.exchange-result small{font-size:13px}
+.exchange-status{min-height:20px;color:#91aa98;font-size:12px;text-align:center}
+@media(max-width:600px){.exchange-card{padding:17px}}
+
+
+/* Кроссворды, переводы и золотой звёздный фон */
+.gold-stars{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;mask-image:linear-gradient(to right,#000 0%,#000 18%,transparent 38%,transparent 62%,#000 82%,#000 100%)}
+.gold-star{position:absolute;top:-35px;color:#f4c75e;text-shadow:0 0 12px #f7c65c99;filter:blur(1.3px);animation:goldFall linear infinite;will-change:transform}
+@keyframes goldFall{0%{transform:translate3d(0,-8vh,0) rotate(0deg);opacity:0}12%{opacity:.35}85%{opacity:.25}100%{transform:translate3d(35px,115vh,0) rotate(260deg);opacity:0}}
+.crossword-card{max-width:700px}.crossword-clues{display:grid;gap:12px;margin:18px 0}.crossword-clue{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,200px);align-items:center;gap:14px;padding:13px;border:1px solid #55e88922;border-radius:12px;background:#07150c;color:#d9f0df}.crossword-clue small{display:block;color:#79a989;font-size:11px;margin-top:5px}.crossword-clue input{min-width:0;width:100%;padding:11px;border:1px solid #4a805a;border-radius:9px;background:#0a1a10;color:#fff;font:inherit;text-transform:uppercase}.crossword-clue input.correct-answer{border-color:#55e889;background:#103b21}.crossword-clue input.wrong-answer{border-color:#e67c69}.crossword-note{display:block;margin-top:16px;line-height:1.5;text-align:center}.exchange-input{margin-bottom:10px}.crossword-card .secondary{background:#173323;color:#dfffea}
+@media(max-width:600px){.crossword-clue{grid-template-columns:1fr}.crossword-clue input{max-width:100%}}
