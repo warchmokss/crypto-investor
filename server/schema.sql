@@ -39,3 +39,13 @@ CREATE TABLE IF NOT EXISTS player_crossword_claims (
   telegram_id BIGINT PRIMARY KEY REFERENCES players(telegram_id) ON DELETE CASCADE,
   last_claim_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Журнал начислений виртуальной валюты администраторами.
+CREATE TABLE IF NOT EXISTS admin_balance_audit (
+  id BIGSERIAL PRIMARY KEY,
+  admin_id BIGINT NOT NULL REFERENCES players(telegram_id),
+  target_id BIGINT NOT NULL REFERENCES players(telegram_id),
+  amount BIGINT NOT NULL CHECK (amount > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS admin_balance_audit_created_idx ON admin_balance_audit(created_at DESC);
