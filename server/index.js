@@ -21,7 +21,7 @@ const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetr
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
-const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://crypto-investor-72f3.onrender.com').replace(/\\/$/, '');
+const PUBLIC_URL = process.env.PUBLIC_URL || 'https://crypto-investor-72f3.onrender.com';
 const TOKEN_SECRET = process.env.SESSION_SECRET;
 const MAX_OFFLINE_MINUTES = 8 * 60;
 
