@@ -100,20 +100,20 @@ app.get('/api/leaderboard',auth,async(req,res,next)=>{try{const r=await pool.que
 // Админ-доступ проверяется только на сервере по Telegram ID из переменной окружения.
 function requireAdmin(req,res,next) {
   const adminId=process.env.ADMIN_TELEGRAM_ID;
-  if(!adminId || !/^\\d+$/.test(adminId) || String(req.playerId)!==adminId) {
+  if(!adminId || !/^\d+$/.test(adminId) || String(req.playerId)!==adminId) {
     return res.status(403).json({error:'Доступ запрещён'});
   }
   next();
 }
 app.get('/api/admin/me',auth,(req,res)=>{
   const adminId=process.env.ADMIN_TELEGRAM_ID;
-  res.json({isAdmin:!!adminId && /^\\d+$/.test(adminId) && String(req.playerId)===adminId});
+  res.json({isAdmin:!!adminId && /^\d+$/.test(adminId) && String(req.playerId)===adminId});
 });
 app.post('/api/admin/credit',auth,requireAdmin,async(req,res,next)=>{
   try {
     const targetId=String(req.body?.telegramId||'').trim();
     const amount=Number(req.body?.amount);
-    if(!/^\\d{5,20}$/.test(targetId) || !Number.isSafeInteger(amount) || amount<1 || amount>1000000000) {
+    if(!/^\d{5,20}$/.test(targetId) || !Number.isSafeInteger(amount) || amount<1 || amount>1000000000) {
       throw Object.assign(new Error('Укажи корректный Telegram ID и сумму от 1 до 1 000 000 000 игровых рублей'),{status:400});
     }
     const result=await transaction(async c=>{
