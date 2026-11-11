@@ -216,7 +216,9 @@ const ASSETS = {
 let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false;
 const DEMO_KEY='crypto-investor-demo-v1';
 function saveDemo(){if(demoMode&&game)localStorage.setItem(DEMO_KEY,JSON.stringify(game));}
-function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(saved?.player && !saved.purchasedUpgrades?.length && Number(saved.player.tapReward)!==50){saved.player.tapReward=50;localStorage.setItem(DEMO_KEY,JSON.stringify(saved));}return saved||{player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:50},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}catch{return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:50},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}}
+function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:50},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}
+function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||50},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0};}
+function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(!saved||!saved.player||typeof saved.player!=='object')return emptyGame();const valid=normalizeGameState(saved);if(!valid.purchasedUpgrades.length&&Number(valid.player.tapReward)!==50){valid.player.tapReward=50;localStorage.setItem(DEMO_KEY,JSON.stringify(valid));}return valid;}catch{return emptyGame();}}
 function demoApi(path,body={}){
   if(path==='/game/state')return game;
   const p=game.player;
@@ -266,9 +268,9 @@ function renderGarage(){
   $('garageGrid').innerHTML=owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-icon">${a.icon}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
-function renderAll(){updateDisplay();renderUpgrades();renderBusinesses();}
+function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();}
 function showFireworks(){const layer=$('fireworks'),popup=$('bonusPopup');layer.innerHTML='';layer.classList.add('show');popup.textContent='🎉 Бонус за 100 нажатий!';popup.classList.add('show');setTimeout(()=>{layer.classList.remove('show');popup.classList.remove('show');},2200)}
-async function refresh(){game=await api('/game/state');renderAll();}
+async function refresh(){game=normalizeGameState(await api('/game/state'));renderAll();}
 async function action(fn,successText){if(busy)return;busy=true;try{game=await fn();renderAll();$('tapMessage').textContent=successText||'Готово!';$('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';}catch(e){$('tapMessage').textContent=e.message;$('saveStatus').textContent='Не удалось выполнить действие';}finally{busy=false}}
 async function start(){
   const tg=window.Telegram?.WebApp;
