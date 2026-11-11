@@ -283,7 +283,12 @@ async function start(){
   }
   tg.ready();tg.expand();
   try{const authData=await api('/auth/telegram',{initData:tg.initData});token=authData.token;await refresh();try{const admin=await api('/admin/me');isAdmin=admin.isAdmin===true;$('adminNav').hidden=!isAdmin;}catch{isAdmin=false;$('adminNav').hidden=true;}$('tapButton').disabled=false;$('saveStatus').textContent='Аккаунт Telegram подключён · прогресс хранится на сервере ✓';}
-  catch(e){$('saveStatus').textContent=e.message;$('tapButton').disabled=true;}
+  catch(e){
+    // Если страница открыта вне Telegram или Telegram initData недоступен, не оставляем game=null.
+    demoMode=true; token=null; isAdmin=false; game=loadDemo();
+    $('adminNav').hidden=true; $('tapButton').disabled=false; renderAll();
+    $('saveStatus').textContent='Не удалось подключить аккаунт Telegram: '+(e.message||'ошибка авторизации')+'. Включён локальный демо-режим.';
+  }
 }
 $('tapButton').addEventListener('click',()=>action(async()=>{const old=game.player.taps;const next=await api('/game/tap',{});if(next.player.taps%100===0&&next.player.taps!==old)showFireworks();return next;},'Монеты начислены!'));
 $('adminCredit').addEventListener('click',async()=>{
