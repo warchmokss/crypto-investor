@@ -20,6 +20,8 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 2, enableReadyCheck: true }) : null;
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
+const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://crypto-investor-72f3.onrender.com').replace(/\\/$/, '');
 const TOKEN_SECRET = process.env.SESSION_SECRET;
 const MAX_OFFLINE_MINUTES = 8 * 60;
 
@@ -125,9 +127,81 @@ app.post('/api/admin/credit',auth,requireAdmin,async(req,res,next)=>{
     res.json({ok:true,balance:result,credited:amount});
   } catch(e) { next(e); }
 });
+
+// Telegram bot commands: only ADMIN_TELEGRAM_ID may use /give and /balance.
+async function sendBotMessage(chatId, text) {
+  const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: 'POST', headers: {'content-type':'application/json'},
+    body: JSON.stringify({chat_id:chatId,text})
+  });
+  if (!response.ok) throw new Error('Telegram sendMessage failed');
+}
+app.post('/api/telegram/webhook', async (req,res) => {
+  if (!TELEGRAM_WEBHOOK_SECRET || req.get('x-telegram-bot-api-secret-token') !== TELEGRAM_WEBHOOK_SECRET) {
+    return res.sendStatus(401);
+  }
+  res.sendStatus(200);
+  try {
+    const message = req.body?.message;
+    const text = String(message?.text || '').trim();
+    const senderId = String(message?.from?.id || '');
+    const chatId = message?.chat?.id;
+    if (!text || !chatId) return;
+    if (senderId !== String(process.env.ADMIN_TELEGRAM_ID || '')) {
+      await sendBotMessage(chatId, 'Команды администратора доступны только владельцу игры.');
+      return;
+    }
+    const give = text.match(/^\\/give(?:@\\w+)?\\s+@([A-Za-z0-9_]{5,32})\\s+(\\d{1,10})$/i);
+    const balance = text.match(/^\\/balance(?:@\\w+)?\\s+@([A-Za-z0-9_]{5,32})$/i);
+    if (give) {
+      const username = give[1];
+      const amount = Number(give[2]);
+      if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000000) {
+        await sendBotMessage(chatId, 'Сумма должна быть от 1 до 1 000 000 000 игровых рублей.');
+        return;
+      }
+      const result = await transaction(async c => {
+        const matches = await c.query('SELECT telegram_id, username FROM players WHERE lower(username)=lower($1) FOR UPDATE', [username]);
+        if (matches.rowCount === 0) return {error:'Игрок не найден. Пусть он хотя бы один раз откроет игру в Telegram.'};
+        if (matches.rowCount > 1) return {error:'Найдено несколько совпадений. Используй Telegram ID в админ-панели.'};
+        const targetId = String(matches.rows[0].telegram_id);
+        const adminExists = await c.query('SELECT 1 FROM players WHERE telegram_id=$1', [senderId]);
+        if (!adminExists.rowCount) return {error:'Сначала открой игру CRYPTO INVESTOR со своего Telegram-аккаунта.'};
+        const updated = await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1 RETURNING balance', [targetId, amount]);
+        await c.query('INSERT INTO admin_balance_audit(admin_id,target_id,amount) VALUES($1,$2,$3)', [senderId,targetId,amount]);
+        return {username:matches.rows[0].username || username,balance:Number(updated.rows[0].balance)};
+      });
+      await sendBotMessage(chatId, result.error || `Готово! @${result.username} начислено ${amount.toLocaleString('ru-RU')} игровых рублей. Новый баланс: ${result.balance.toLocaleString('ru-RU')} ₽.`);
+      return;
+    }
+    if (balance) {
+      const matches = await pool.query('SELECT username,balance FROM players WHERE lower(username)=lower($1)', [balance[1]]);
+      if (matches.rowCount !== 1) {
+        await sendBotMessage(chatId, matches.rowCount ? 'Найдено несколько совпадений.' : 'Игрок не найден. Он должен хотя бы раз открыть игру.');
+        return;
+      }
+      await sendBotMessage(chatId, `Баланс @${matches.rows[0].username}: ${Number(matches.rows[0].balance).toLocaleString('ru-RU')} игровых рублей.`);
+      return;
+    }
+    if (/^\\/start(?:\\s|$)/i.test(text) || /^\\/help(?:\\s|$)/i.test(text)) {
+      await sendBotMessage(chatId, 'Команды владельца:\\n/give @username сумма — начислить игровые рубли\\n/balance @username — посмотреть баланс');
+    }
+  } catch (error) {
+    req.log?.error(error);
+    try { await sendBotMessage(chatId, 'Не удалось выполнить команду. Проверь, что игрок уже заходил в игру.'); } catch {}
+  }
+});
+
 app.get('/health',async(req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true})}catch{res.status(503).json({ok:false})}});
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 app.use(express.static(root,{index:'index.html',maxAge:process.env.NODE_ENV==='production'?'1h':0}));
 app.use((err,req,res,next)=>{req.log?.error(err);res.status(err.status||500).json({error:err.status?err.message:'Внутренняя ошибка сервера'});});
 const server=app.listen(PORT,()=>console.log(`CRYPTO INVESTOR listening on ${PORT}`));
+if (TELEGRAM_WEBHOOK_SECRET) {
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
+    method:'POST', headers:{'content-type':'application/json'},
+    body:JSON.stringify({url:`${PUBLIC_URL}/api/telegram/webhook`,secret_token:TELEGRAM_WEBHOOK_SECRET,allowed_updates:['message']})
+  }).then(r=>r.json()).then(data=>console.log('Telegram webhook registration:',data.ok?'ok':'failed'))
+    .catch(error=>console.error('Telegram webhook registration failed:',error.message));
+}
 async function shutdown(){server.close(()=>{});await pool.end();if(redis)await redis.quit();process.exit(0)} process.on('SIGTERM',shutdown);process.on('SIGINT',shutdown);
