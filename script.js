@@ -213,7 +213,7 @@ const ASSETS = {
     {id:'apt50',name:"Особняк",icon:"\ud83c\udfe0",cost:3211047636,income:9633143,description:"Недвижимость для сдачи в аренду и пассивного дохода."}
   ]
 };
-let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false;
+let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false;
 const DEMO_KEY='crypto-investor-demo-v1';
 function saveDemo(){if(demoMode&&game)localStorage.setItem(DEMO_KEY,JSON.stringify(game));}
 function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(saved?.player && !saved.purchasedUpgrades?.length && Number(saved.player.tapReward)!==50){saved.player.tapReward=50;localStorage.setItem(DEMO_KEY,JSON.stringify(saved));}return saved||{player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:50},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}catch{return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:50},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}}
@@ -282,10 +282,19 @@ async function start(){
     return;
   }
   tg.ready();tg.expand();
-  try{const authData=await api('/auth/telegram',{initData:tg.initData});token=authData.token;await refresh();$('tapButton').disabled=false;$('saveStatus').textContent='Аккаунт Telegram подключён · прогресс хранится на сервере ✓';}
+  try{const authData=await api('/auth/telegram',{initData:tg.initData});token=authData.token;await refresh();try{const admin=await api('/admin/me');isAdmin=admin.isAdmin===true;$('adminNav').hidden=!isAdmin;}catch{isAdmin=false;$('adminNav').hidden=true;}$('tapButton').disabled=false;$('saveStatus').textContent='Аккаунт Telegram подключён · прогресс хранится на сервере ✓';}
   catch(e){$('saveStatus').textContent=e.message;$('tapButton').disabled=true;}
 }
 $('tapButton').addEventListener('click',()=>action(async()=>{const old=game.player.taps;const next=await api('/game/tap',{});if(next.player.taps%100===0&&next.player.taps!==old)showFireworks();return next;},'Монеты начислены!'));
+$('adminCredit').addEventListener('click',async()=>{
+  if(!isAdmin||demoMode)return;
+  const telegramId=$('adminTelegramId').value.trim(),amount=Number($('adminAmount').value),status=$('adminStatus'),btn=$('adminCredit');
+  if(!/^\\d{5,20}$/.test(telegramId)||!Number.isSafeInteger(amount)||amount<1||amount>1000000000){status.textContent='Проверь Telegram ID и сумму (1–1 000 000 000).';return;}
+  btn.disabled=true;status.textContent='Проверяем права и начисляем…';
+  try{const result=await api('/admin/credit',{telegramId,amount});status.textContent='Готово: начислено '+money(result.credited)+' игровых ₽. Новый баланс игрока: '+money(result.balance)+' ₽.';$('adminAmount').value='';}
+  catch(e){status.textContent=e.message||'Не удалось начислить игровые рубли.';}
+  finally{btn.disabled=false;}
+});
 document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.page).classList.add('active');}));
 $('upgradeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-upgrade]');if(b)action(()=>api('/game/buy-upgrade',{upgradeId:b.dataset.upgrade}),'Апгрейд куплен!');});
 $('businessCategories').addEventListener('click',e=>{const b=e.target.closest('[data-category]');if(!b)return;activeCategory=b.dataset.category;document.querySelectorAll('.category-btn').forEach(x=>x.classList.toggle('active',x===b));renderBusinesses();});

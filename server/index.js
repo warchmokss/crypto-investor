@@ -96,6 +96,35 @@ app.post('/api/game/buy-asset',auth,async(req,res,next)=>{try{const a=ALL_ASSETS
 app.post('/api/game/sell-asset',auth,async(req,res,next)=>{try{const a=ALL_ASSETS.find(x=>x.id===req.body?.assetId);if(!a)throw Object.assign(new Error('Неизвестный актив'),{status:400});const state=await transaction(async c=>{const s=await getState(c,req.playerId);const row=(await c.query('SELECT level FROM player_assets WHERE telegram_id=$1 AND asset_id=$2 FOR UPDATE',[req.playerId,a.id])).rows[0];if(!row)throw Object.assign(new Error('Этот актив не принадлежит тебе'),{status:400});const resale=Math.floor(a.cost*0.7);await c.query('DELETE FROM player_assets WHERE telegram_id=$1 AND asset_id=$2',[req.playerId,a.id]);await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,resale]);return getState(c,req.playerId,false)});res.json(state)}catch(e){next(e)}});
 app.post('/api/game/upgrade-asset',auth,async(req,res,next)=>{try{const a=ALL_ASSETS.find(x=>x.id===req.body?.assetId);if(!a)throw Object.assign(new Error('Неизвестный актив'),{status:400});const state=await transaction(async c=>{const s=await getState(c,req.playerId);const row=(await c.query('SELECT level FROM player_assets WHERE telegram_id=$1 AND asset_id=$2 FOR UPDATE',[req.playerId,a.id])).rows[0];if(!row)throw Object.assign(new Error('Сначала купи этот актив'),{status:400});const fee=Math.max(1000,Math.floor(a.cost*.2));if(row.level>=5)throw Object.assign(new Error('Достигнут максимальный уровень'),{status:400});if(s.player.balance<fee)throw Object.assign(new Error('Недостаточно монет'),{status:400});await c.query('UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,fee]);await c.query('UPDATE player_assets SET level=level+1 WHERE telegram_id=$1 AND asset_id=$2',[req.playerId,a.id]);return getState(c,req.playerId,false)});res.json(state)}catch(e){next(e)}});
 app.get('/api/leaderboard',auth,async(req,res,next)=>{try{const r=await pool.query('SELECT first_name,username,balance FROM players ORDER BY balance DESC LIMIT 20');res.json({players:r.rows.map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name,balance:Number(x.balance)}))})}catch(e){next(e)}});
+
+// Админ-доступ проверяется только на сервере по Telegram ID из переменной окружения.
+function requireAdmin(req,res,next) {
+  const adminId=process.env.ADMIN_TELEGRAM_ID;
+  if(!adminId || !/^\d+$/.test(adminId) || String(req.playerId)!==adminId) {
+    return res.status(403).json({error:'Доступ запрещён'});
+  }
+  next();
+}
+app.get('/api/admin/me',auth,(req,res)=>{
+  const adminId=process.env.ADMIN_TELEGRAM_ID;
+  res.json({isAdmin:!!adminId && /^\d+$/.test(adminId) && String(req.playerId)===adminId});
+});
+app.post('/api/admin/credit',auth,requireAdmin,async(req,res,next)=>{
+  try {
+    const targetId=String(req.body?.telegramId||'').trim();
+    const amount=Number(req.body?.amount);
+    if(!/^\d{5,20}$/.test(targetId) || !Number.isSafeInteger(amount) || amount<1 || amount>1000000000) {
+      throw Object.assign(new Error('Укажи корректный Telegram ID и сумму от 1 до 1 000 000 000 игровых рублей'),{status:400});
+    }
+    const result=await transaction(async c=>{
+      const updated=await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1 RETURNING balance',[targetId,amount]);
+      if(!updated.rowCount) throw Object.assign(new Error('Игрок не найден. Он должен хотя бы один раз открыть приложение.'),{status:404});
+      await c.query('INSERT INTO admin_balance_audit(admin_id,target_id,amount) VALUES($1,$2,$3)',[req.playerId,targetId,amount]);
+      return Number(updated.rows[0].balance);
+    });
+    res.json({ok:true,balance:result,credited:amount});
+  } catch(e) { next(e); }
+});
 app.get('/health',async(req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true})}catch{res.status(503).json({ok:false})}});
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 app.use(express.static(root,{index:'index.html',maxAge:process.env.NODE_ENV==='production'?'1h':0}));
