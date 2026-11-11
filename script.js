@@ -234,7 +234,7 @@ const getAssetIncome=a=>Math.floor(a.income*(1+(game?.propertyLevels?.[a.id]||0)
 
 async function api(path,body) {
   if(demoMode)return demoApi(path,body);
-  const response=await fetch(`/api${path}`,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},...(body?{body:JSON.stringify(body)}:{})});
+   const response=await fetch(`https://crypto-investor-72f3.onrender.com/api${path}`,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},...(body?{body:JSON.stringify(body)}:{})});
   const data=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(data.error||`Ошибка сервера (${response.status})`);
   return data;
