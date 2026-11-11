@@ -151,8 +151,8 @@ app.post('/api/telegram/webhook', async (req,res) => {
       await sendBotMessage(chatId, 'Команды администратора доступны только владельцу игры.');
       return;
     }
-    const give = text.match(/^\\/give(?:@\\w+)?\\s+@([A-Za-z0-9_]{5,32})\\s+(\\d{1,10})$/i);
-    const balance = text.match(/^\\/balance(?:@\\w+)?\\s+@([A-Za-z0-9_]{5,32})$/i);
+    const give = text.match(/^\/give(?:@\w+)?\s+@([A-Za-z0-9_]{5,32})\s+(\d{1,10})$/i);
+    const balance = text.match(/^\/balance(?:@\w+)?\s+@([A-Za-z0-9_]{5,32})$/i);
     if (give) {
       const username = give[1];
       const amount = Number(give[2]);
@@ -183,8 +183,8 @@ app.post('/api/telegram/webhook', async (req,res) => {
       await sendBotMessage(chatId, `Баланс @${matches.rows[0].username}: ${Number(matches.rows[0].balance).toLocaleString('ru-RU')} игровых рублей.`);
       return;
     }
-    if (/^\\/start(?:\\s|$)/i.test(text) || /^\\/help(?:\\s|$)/i.test(text)) {
-      await sendBotMessage(chatId, 'Команды владельца:\\n/give @username сумма — начислить игровые рубли\\n/balance @username — посмотреть баланс');
+    if (/^\/start(?:\s|$)/i.test(text) || /^\/help(?:\s|$)/i.test(text)) {
+      await sendBotMessage(chatId, 'Команды владельца:\n/give @username сумма — начислить игровые рубли\n/balance @username — посмотреть баланс');
     }
   } catch (error) {
     req.log?.error(error);
