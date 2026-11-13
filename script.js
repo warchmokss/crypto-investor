@@ -309,7 +309,6 @@ async function start(){
     $('saveStatus').onclick=()=>{
       $('saveStatus').onclick=null;
       $('saveStatus').textContent='Повторное подключение к серверу…';
-      start();
     };
   }
 }
