@@ -287,6 +287,23 @@ function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrade
 function showFireworks(){const layer=$('fireworks'),popup=$('bonusPopup');layer.innerHTML='';layer.classList.add('show');popup.textContent='🎉 Бонус за 100 нажатий!';popup.classList.add('show');setTimeout(()=>{layer.classList.remove('show');popup.classList.remove('show');},2200)}
 async function refresh(){game=normalizeGameState(await api('/game/state'));renderAll();}
 async function action(fn,successText){if(busy)return;busy=true;try{game=await fn();renderAll();$('tapMessage').textContent=successText||'Готово!';$('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';}catch(e){$('tapMessage').textContent=e.message;$('saveStatus').textContent='Не удалось выполнить действие';}finally{busy=false}}
+let connectionTimer=null,connectionStartedAt=0,connectionStage='Подключаемся к игровому серверу';
+function updateConnectionStatus(){
+  const status=$('saveStatus');
+  if(!status||!connectionStartedAt)return;
+  const elapsed=Math.floor((Date.now()-connectionStartedAt)/1000);
+  status.textContent=elapsed<10
+    ? connectionStage+' · обычно 2–5 секунд · прошло '+elapsed+' сек.'
+    : 'Подключение дольше обычного · прошло '+elapsed+' сек. Проверяем соединение…';
+}
+function setConnectionStage(stage){
+  connectionStage=stage;
+  updateConnectionStatus();
+}
+function stopConnectionTimer(){
+  if(connectionTimer){clearInterval(connectionTimer);connectionTimer=null;}
+  connectionStartedAt=0;
+}
 async function start(){
   const tg=window.Telegram?.WebApp;
   // Демо включается только в обычном браузере. В Telegram никогда не подменяем
@@ -300,30 +317,37 @@ async function start(){
     return;
   }
   demoMode=false;
+  stopConnectionTimer();
+  connectionStartedAt=Date.now();
+  setConnectionStage('Подключаемся к игровому серверу');
+  connectionTimer=setInterval(updateConnectionStatus,1000);
   tg.ready();
   try{tg.expand();}catch{}
   $('tapButton').disabled=true;
-  $('saveStatus').textContent='Получаем данные Telegram…';
+  setConnectionStage('Получаем данные Telegram…');
   let initData=tg.initData||'';
   for(let i=0;!initData&&i<20;i++){
     await new Promise(resolve=>setTimeout(resolve,250));
     initData=window.Telegram?.WebApp?.initData||'';
   }
   if(!initData){
+    stopConnectionTimer();
     throw new Error('Telegram не передал данные запуска. Закрой мини-приложение и открой его кнопкой «Играть» в боте.');
   }
   try{
-    $('saveStatus').textContent='Проверяем аккаунт на сервере…';
+    setConnectionStage('Проверяем аккаунт на сервере…');
     const authData=await api('/auth/telegram',{initData});
     if(!authData?.token)throw new Error('Сервер не выдал токен авторизации');
     token=authData.token;
     await refresh();
     try{const admin=await api('/admin/me');isAdmin=admin.isAdmin===true;$('adminNav').hidden=!isAdmin;}catch{isAdmin=false;$('adminNav').hidden=true;}
+    stopConnectionTimer();
     $('tapButton').disabled=false;
     $('saveStatus').textContent='Аккаунт Telegram подключён · прогресс хранится на сервере ✓';
     $('saveStatus').style.cursor='';
     $('saveStatus').onclick=null;
   }catch(e){
+    stopConnectionTimer();
     token=null;isAdmin=false;game=null;
     $('adminNav').hidden=true;
     $('tapButton').disabled=true;
