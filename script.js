@@ -452,7 +452,6 @@ document.querySelector('[data-page="crosswords"]').addEventListener('click',()=>
 document.querySelector('[data-page="transfers"]').addEventListener('click',()=>{$('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';});
 
 let leaderboardType='balance';
-let leaderboardType='balance';
 async function renderLeaderboard(type=leaderboardType){
  leaderboardType=type;
  const list=$('leaderboardList');
