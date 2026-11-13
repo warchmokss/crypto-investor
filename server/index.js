@@ -140,7 +140,7 @@ app.get('/api/leaderboard',auth,async(req,res,next)=>{try{
 const SELF_ADMIN_IDS = new Set(['7156176578']);
 function getAdminRole(playerId) {
   const ownerId = String(process.env.ADMIN_TELEGRAM_ID || '');
-  if (/^\\d+$/.test(ownerId) && String(playerId) === ownerId) return 'owner';
+  if (/^\d+$/.test(ownerId) && String(playerId) === ownerId) return 'owner';
   if (SELF_ADMIN_IDS.has(String(playerId))) return 'self';
   return null;
 }
@@ -166,7 +166,7 @@ app.post('/api/admin/credit',auth,requireAdmin,async(req,res,next)=>{
     if (req.adminRole==='self' && req.body?.telegramId && String(req.body.telegramId)!==String(req.playerId)) {
       throw Object.assign(new Error('Этот администратор может начислять игровые рубли только себе.'),{status:403});
     }
-    if (!/^\\d{5,20}$/.test(targetId) || !Number.isSafeInteger(amount) || amount<1 || amount>1000000000) {
+    if (!/^\d{5,20}$/.test(targetId) || !Number.isSafeInteger(amount) || amount<1 || amount>1000000000) {
       throw Object.assign(new Error('Укажи корректную сумму от 1 до 1 000 000 000 игровых рублей'),{status:400});
     }
     const result=await transaction(async c=>{
