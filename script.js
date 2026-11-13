@@ -309,6 +309,7 @@ async function start(){
     $('saveStatus').onclick=()=>{
       $('saveStatus').onclick=null;
       $('saveStatus').textContent='Повторное подключение к серверу…';
+      start();
     };
   }
 }
@@ -331,7 +332,6 @@ document.querySelectorAll('[data-garage]').forEach(b=>b.addEventListener('click'
 $('propertyUpgradeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-property-upgrade]');if(b)action(()=>api('/game/upgrade-asset',{assetId:b.dataset.propertyUpgrade}),'Имущество улучшено!');});
 $('buyButton').addEventListener('click',()=>$('buyMessage').textContent='Покупка пока отключена: платежи не подключены.');
 window.addEventListener('focus',()=>{if(token&&!busy)refresh().catch(()=>{});});
-start();
 
 
 // Мини-игры: исключительно виртуальный демо-баланс, без денежных платежей.
