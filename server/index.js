@@ -135,28 +135,43 @@ app.get('/api/leaderboard',auth,async(req,res,next)=>{try{
  res.json({type,players:r.rows.map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name||'Игрок',value:Number(type==='realestate'?x.real_estate_value:x.asset_value)}))});
  }catch(e){next(e)} });
 
-// Админ-доступ проверяется только на сервере по Telegram ID из переменной окружения.
+// Владелец имеет полный доступ. Дополнительный администратор может начислять
+// игровые рубли только своему Telegram-аккаунту.
+const SELF_ADMIN_IDS = new Set(['7156176578']);
+function getAdminRole(playerId) {
+  const ownerId = String(process.env.ADMIN_TELEGRAM_ID || '');
+  if (/^\\d+$/.test(ownerId) && String(playerId) === ownerId) return 'owner';
+  if (SELF_ADMIN_IDS.has(String(playerId))) return 'self';
+  return null;
+}
 function requireAdmin(req,res,next) {
-  const adminId=process.env.ADMIN_TELEGRAM_ID;
-  if(!adminId || !/^\d+$/.test(adminId) || String(req.playerId)!==adminId) {
-    return res.status(403).json({error:'Доступ запрещён'});
-  }
+  const role = getAdminRole(req.playerId);
+  if (!role) return res.status(403).json({error:'Доступ запрещён'});
+  req.adminRole = role;
   next();
 }
-app.get('/api/admin/me',auth,(req,res)=>{
-  const adminId=process.env.ADMIN_TELEGRAM_ID;
-  res.json({isAdmin:!!adminId && /^\d+$/.test(adminId) && String(req.playerId)===adminId});
+app.get('/api/admin/me',auth,async(req,res,next)=>{
+  try {
+    const role = getAdminRole(req.playerId);
+    if (!role) return res.json({isAdmin:false});
+    const player = (await pool.query('SELECT telegram_id,username,first_name,balance FROM players WHERE telegram_id=$1',[req.playerId])).rows[0];
+    if (!player) return res.status(404).json({error:'Сначала открой игру в Telegram, чтобы создать профиль.'});
+    res.json({isAdmin:true,role,telegramId:String(player.telegram_id),username:player.username,firstName:player.first_name,balance:Number(player.balance)});
+  } catch(e) { next(e); }
 });
 app.post('/api/admin/credit',auth,requireAdmin,async(req,res,next)=>{
   try {
-    const targetId=String(req.body?.telegramId||'').trim();
+    const targetId=req.adminRole==='self' ? String(req.playerId) : String(req.body?.telegramId||'').trim();
     const amount=Number(req.body?.amount);
-    if(!/^\d{5,20}$/.test(targetId) || !Number.isSafeInteger(amount) || amount<1 || amount>1000000000) {
-      throw Object.assign(new Error('Укажи корректный Telegram ID и сумму от 1 до 1 000 000 000 игровых рублей'),{status:400});
+    if (req.adminRole==='self' && req.body?.telegramId && String(req.body.telegramId)!==String(req.playerId)) {
+      throw Object.assign(new Error('Этот администратор может начислять игровые рубли только себе.'),{status:403});
+    }
+    if (!/^\\d{5,20}$/.test(targetId) || !Number.isSafeInteger(amount) || amount<1 || amount>1000000000) {
+      throw Object.assign(new Error('Укажи корректную сумму от 1 до 1 000 000 000 игровых рублей'),{status:400});
     }
     const result=await transaction(async c=>{
       const updated=await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1 RETURNING balance',[targetId,amount]);
-      if(!updated.rowCount) throw Object.assign(new Error('Игрок не найден. Он должен хотя бы один раз открыть приложение.'),{status:404});
+      if(!updated.rowCount) throw Object.assign(new Error('Игрок не найден. Сначала открой игру в Telegram.'),{status:404});
       await c.query('INSERT INTO admin_balance_audit(admin_id,target_id,amount) VALUES($1,$2,$3)',[req.playerId,targetId,amount]);
       return Number(updated.rows[0].balance);
     });
@@ -164,7 +179,7 @@ app.post('/api/admin/credit',auth,requireAdmin,async(req,res,next)=>{
   } catch(e) { next(e); }
 });
 
-// Telegram bot commands: only ADMIN_TELEGRAM_ID may use /give and /balance.
+// Команды бота: владелец может работать с любым игроком, self-admin — только со своим аккаунтом.
 async function sendBotMessage(chatId, text, replyMarkup = null) {
   const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: 'POST', headers: {'content-type':'application/json'},
@@ -191,8 +206,9 @@ app.post('/api/telegram/webhook', async (req,res) => {
       });
       return;
     }
-    if (senderId !== String(process.env.ADMIN_TELEGRAM_ID || '')) {
-      await sendBotMessage(chatId, 'Команды администратора доступны только владельцу игры.');
+    const adminRole = getAdminRole(senderId);
+    if (!adminRole) {
+      await sendBotMessage(chatId, 'У тебя нет доступа к командам администратора.');
       return;
     }
     const give = text.match(/^\/give(?:@\w+)?\s+@([A-Za-z0-9_]{5,32})\s+(\d{1,10})$/i);
@@ -209,6 +225,7 @@ app.post('/api/telegram/webhook', async (req,res) => {
         if (matches.rowCount === 0) return {error:'Игрок не найден. Пусть он хотя бы один раз откроет игру в Telegram.'};
         if (matches.rowCount > 1) return {error:'Найдено несколько совпадений. Используй Telegram ID в админ-панели.'};
         const targetId = String(matches.rows[0].telegram_id);
+        if (adminRole === 'self' && targetId !== senderId) return {error:'Тебе разрешено начислять игровые рубли только на свой аккаунт.'};
         const adminExists = await c.query('SELECT 1 FROM players WHERE telegram_id=$1', [senderId]);
         if (!adminExists.rowCount) return {error:'Сначала открой игру CRYPTO INVESTOR со своего Telegram-аккаунта.'};
         const updated = await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1 RETURNING balance', [targetId, amount]);
@@ -219,12 +236,16 @@ app.post('/api/telegram/webhook', async (req,res) => {
       return;
     }
     if (balance) {
-      const matches = await pool.query('SELECT username,balance FROM players WHERE lower(username)=lower($1)', [balance[1]]);
+      const matches = await pool.query('SELECT telegram_id,username,balance FROM players WHERE lower(username)=lower($1)', [balance[1]]);
       if (matches.rowCount !== 1) {
         await sendBotMessage(chatId, matches.rowCount ? 'Найдено несколько совпадений.' : 'Игрок не найден. Он должен хотя бы раз открыть игру.');
         return;
       }
-      await sendBotMessage(chatId, `Баланс @${matches.rows[0].username}: ${Number(matches.rows[0].balance).toLocaleString('ru-RU')} игровых рублей.`);
+      if (adminRole === 'self' && String(matches.rows[0].telegram_id) !== senderId) {
+        await sendBotMessage(chatId, 'Тебе разрешено смотреть только собственный баланс.');
+        return;
+      }
+      await sendBotMessage(chatId, `Баланс @${matches.rows[0].username || balance[1]}: ${Number(matches.rows[0].balance).toLocaleString('ru-RU')} игровых рублей.`);
       return;
     }
     if (/^\/help(?:\s|$)/i.test(text)) {
