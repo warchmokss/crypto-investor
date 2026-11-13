@@ -17,6 +17,7 @@ import { UPGRADES, ASSETS, ALL_ASSETS, getIncome } from './catalog.js';
 const { Pool } = pg;
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PG_POOL_MAX || 20), idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
+const bansReady = pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 2, enableReadyCheck: true }) : null;
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -52,13 +53,16 @@ function makeSession(user) {
   const payload = Buffer.from(JSON.stringify({ sub:user.id, exp:Date.now()+7*86400000 })).toString('base64url');
   const sig = createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url'); return `${payload}.${sig}`;
 }
-function auth(req,res,next) {
+async function auth(req,res,next) {
   try {
     const token = (req.headers.authorization || '').replace(/^Bearer\s+/i,''); const [payload,sig] = token.split('.');
     if (!payload || !sig) throw new Error('Требуется авторизация');
     const expected = createHmac('sha256',TOKEN_SECRET).update(payload).digest(); const actual=Buffer.from(sig,'base64url');
     if (expected.length!==actual.length || !timingSafeEqual(expected,actual)) throw new Error('Недействительная сессия');
     const data=JSON.parse(Buffer.from(payload,'base64url').toString()); if (!data.sub || data.exp<Date.now()) throw new Error('Сессия истекла');
+    await bansReady;
+    const ban = await pool.query('SELECT expires_at FROM player_account_bans WHERE telegram_id=$1 AND (expires_at IS NULL OR expires_at>NOW())',[String(data.sub)]);
+    if (ban.rowCount) return res.status(403).json({error:ban.rows[0].expires_at ? 'Аккаунт заблокирован до '+new Date(ban.rows[0].expires_at).toLocaleString('ru-RU')+'.' : 'Аккаунт заблокирован навсегда.'});
     req.playerId=data.sub; next();
   } catch(e) { res.status(401).json({ error:e.message || 'Не авторизован' }); }
 }
@@ -83,6 +87,9 @@ async function getState(client,id,applyIncome=true) {
 }
 app.post('/api/auth/telegram', async (req,res,next)=>{ try {
   const user=verifyTelegramInitData(req.body?.initData);
+  await bansReady;
+  const ban=await pool.query('SELECT expires_at FROM player_account_bans WHERE telegram_id=$1 AND (expires_at IS NULL OR expires_at>NOW())',[user.id]);
+  if(ban.rowCount) throw Object.assign(new Error(ban.rows[0].expires_at ? 'Аккаунт заблокирован до '+new Date(ban.rows[0].expires_at).toLocaleString('ru-RU')+'.' : 'Аккаунт заблокирован навсегда.'),{status:403});
   await pool.query(`INSERT INTO players(telegram_id,username,first_name) VALUES($1,$2,$3) ON CONFLICT(telegram_id) DO UPDATE SET username=EXCLUDED.username,first_name=EXCLUDED.first_name,updated_at=NOW()`,[user.id,user.username,user.firstName]);
   await pool.query(`UPDATE players SET tap_reward=300 WHERE telegram_id=$1 AND tap_reward=50 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)`,[user.id]);
   res.json({ token:makeSession(user) });
@@ -179,6 +186,23 @@ app.post('/api/admin/credit',auth,requireAdmin,async(req,res,next)=>{
   } catch(e) { next(e); }
 });
 
+// Команды управления аккаунтами доступны только главному администратору.
+function findAdminTarget(client, username) {
+  const clean = String(username || '').replace(/^@/, '').trim();
+  if (!/^[A-Za-z0-9_]{5,32}$/.test(clean)) throw Object.assign(new Error('Укажи корректный @username игрока.'),{status:400});
+  return client.query('SELECT telegram_id,username,first_name FROM players WHERE lower(username)=lower($1) FOR UPDATE',[clean]);
+}
+function parseBanDuration(value) {
+  if (/^(навсегда|forever|permanent)$/i.test(value || '')) return null;
+  const match = String(value || '').match(/^(\d{1,4})(m|h|d|w)$/i);
+  if (!match) throw Object.assign(new Error('Укажи срок: 30m, 12h, 7d, 2w или «навсегда».'),{status:400});
+  const amount = Number(match[1]);
+  const multiplier = {m:60000,h:3600000,d:86400000,w:604800000}[match[2].toLowerCase()];
+  const ms = amount * multiplier;
+  if (!Number.isSafeInteger(ms) || ms < 60000 || ms > 365*86400000) throw Object.assign(new Error('Временная блокировка должна быть от 1 минуты до 365 дней.'),{status:400});
+  return new Date(Date.now()+ms);
+}
+
 // Команды бота: владелец может работать с любым игроком, self-admin — только со своим аккаунтом.
 async function sendBotMessage(chatId, text, replyMarkup = null) {
   const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -255,8 +279,55 @@ app.post('/api/telegram/webhook', async (req,res) => {
       await sendBotMessage(chatId, `Баланс ${matches.rows[0].username ? '@'+matches.rows[0].username : 'игрока'}: ${Number(matches.rows[0].balance).toLocaleString('ru-RU')} игровых рублей.`);
       return;
     }
+    const resetBalance = text.match(/^\/resetbalance(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})$/i);
+    const ban = text.match(/^\/ban(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})\s+(навсегда|forever|permanent|\d{1,4}[mhdw])(?:\s+(.+))?$/i);
+    const unban = text.match(/^\/unban(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})$/i);
+    if (resetBalance || ban || unban) {
+      if (adminRole !== 'owner') {
+        await sendBotMessage(chatId, 'Эта команда доступна только главному администратору.');
+        return;
+      }
+      if (resetBalance) {
+        const result = await transaction(async c => {
+          const matches = await findAdminTarget(c, resetBalance[1]);
+          if (matches.rowCount !== 1) return {error:matches.rowCount ? 'Найдено несколько совпадений. Уточни username.' : 'Игрок не найден.'};
+          const target = matches.rows[0];
+          if (String(target.telegram_id) === senderId) return {error:'Нельзя обнулить баланс главного администратора.'};
+          await c.query('UPDATE players SET balance=0,last_income_at=NOW(),updated_at=NOW() WHERE telegram_id=$1',[target.telegram_id]);
+          return {name:target.username ? '@'+target.username : target.first_name || 'Игрок'};
+        });
+        await sendBotMessage(chatId, result.error || ('Баланс игрока '+result.name+' обнулён.'));
+        return;
+      }
+      if (ban) {
+        const expiresAt = parseBanDuration(ban[2]);
+        const result = await transaction(async c => {
+          const matches = await findAdminTarget(c, ban[1]);
+          if (matches.rowCount !== 1) return {error:matches.rowCount ? 'Найдено несколько совпадений. Уточни username.' : 'Игрок не найден.'};
+          const target = matches.rows[0];
+          if (String(target.telegram_id) === senderId || String(target.telegram_id) === String(process.env.ADMIN_TELEGRAM_ID)) return {error:'Нельзя заблокировать главный аккаунт.'};
+          await c.query('INSERT INTO player_account_bans(telegram_id,banned_by,reason,expires_at) VALUES($1,$2,$3,$4) ON CONFLICT(telegram_id) DO UPDATE SET banned_by=EXCLUDED.banned_by,reason=EXCLUDED.reason,expires_at=EXCLUDED.expires_at,created_at=NOW()',
+            [String(target.telegram_id),senderId,ban[3] || null,expiresAt]);
+          return {name:target.username ? '@'+target.username : target.first_name || 'Игрок'};
+        });
+        const durationText = expiresAt ? 'до '+expiresAt.toLocaleString('ru-RU') : 'навсегда';
+        await sendBotMessage(chatId, result.error || ('Аккаунт '+result.name+' заблокирован '+durationText+'.'));
+        return;
+      }
+      if (unban) {
+        const result = await transaction(async c => {
+          const matches = await findAdminTarget(c, unban[1]);
+          if (matches.rowCount !== 1) return {error:matches.rowCount ? 'Найдено несколько совпадений. Уточни username.' : 'Игрок не найден.'};
+          const target = matches.rows[0];
+          const deleted = await c.query('DELETE FROM player_account_bans WHERE telegram_id=$1',[String(target.telegram_id)]);
+          return {name:target.username ? '@'+target.username : target.first_name || 'Игрок',wasBanned:deleted.rowCount>0};
+        });
+        await sendBotMessage(chatId, result.error || (result.wasBanned ? 'Блокировка аккаунта '+result.name+' снята.' : 'У аккаунта '+result.name+' не было активной блокировки.'));
+        return;
+      }
+    }
     if (/^\/(give|balance)(?:@\w+)?(?:\s|$)/i.test(text)) {
-      await sendBotMessage(chatId, 'Формат команды:\n/give @username сумма — начислить игровые рубли\n/give Telegram_ID сумма — начислить по ID\n/balance @username или /balance Telegram_ID — посмотреть баланс');
+      await sendBotMessage(chatId, 'Команды администратора:\n/give @username сумма — начислить игровые рубли\n/give Telegram_ID сумма — начислить по ID\n/balance @username или /balance Telegram_ID — посмотреть баланс\n/resetbalance @username — обнулить баланс\n/ban @username 7d — блокировка на срок (30m, 12h, 7d, 2w)\n/ban @username навсегда — постоянная блокировка\n/unban @username — снять блокировку');
       return;
     }
     if (/^\/help(?:\s|$)/i.test(text)) {
@@ -289,6 +360,9 @@ if (TELEGRAM_WEBHOOK_SECRET) {
       {command:'start',description:'Открыть CRYPTO INVESTOR'},
       {command:'give',description:'Начислить игровые рубли'},
       {command:'balance',description:'Посмотреть баланс игрока'},
+      {command:'resetbalance',description:'Обнулить баланс игрока (главный админ)'},
+      {command:'ban',description:'Заблокировать аккаунт (главный админ)'},
+      {command:'unban',description:'Разблокировать аккаунт (главный админ)'},
       {command:'help',description:'Помощь по командам'}
     ]})
   }).then(r=>r.json()).then(data=>console.log('Telegram commands registration:',data.ok?'ok':'failed'))
