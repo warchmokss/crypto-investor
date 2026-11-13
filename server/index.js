@@ -97,7 +97,23 @@ app.post('/api/game/buy-upgrade',auth,async(req,res,next)=>{try{const {upgradeId
 app.post('/api/game/buy-asset',auth,async(req,res,next)=>{try{const a=ALL_ASSETS.find(x=>x.id===req.body?.assetId);if(!a)throw Object.assign(new Error('Неизвестный актив'),{status:400});const state=await transaction(async c=>{const s=await getState(c,req.playerId);if(s.owned.includes(a.id))throw Object.assign(new Error('Актив уже куплен'),{status:409});if(s.player.balance<a.cost)throw Object.assign(new Error('Недостаточно монет'),{status:400});await c.query('UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,a.cost]);await c.query('INSERT INTO player_assets(telegram_id,asset_id) VALUES($1,$2)',[req.playerId,a.id]);return getState(c,req.playerId,false)});res.json(state)}catch(e){next(e)}});
 app.post('/api/game/sell-asset',auth,async(req,res,next)=>{try{const a=ALL_ASSETS.find(x=>x.id===req.body?.assetId);if(!a)throw Object.assign(new Error('Неизвестный актив'),{status:400});const state=await transaction(async c=>{const s=await getState(c,req.playerId);const row=(await c.query('SELECT level FROM player_assets WHERE telegram_id=$1 AND asset_id=$2 FOR UPDATE',[req.playerId,a.id])).rows[0];if(!row)throw Object.assign(new Error('Этот актив не принадлежит тебе'),{status:400});const resale=Math.floor(a.cost*0.7);await c.query('DELETE FROM player_assets WHERE telegram_id=$1 AND asset_id=$2',[req.playerId,a.id]);await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,resale]);return getState(c,req.playerId,false)});res.json(state)}catch(e){next(e)}});
 app.post('/api/game/upgrade-asset',auth,async(req,res,next)=>{try{const a=ALL_ASSETS.find(x=>x.id===req.body?.assetId);if(!a)throw Object.assign(new Error('Неизвестный актив'),{status:400});const state=await transaction(async c=>{const s=await getState(c,req.playerId);const row=(await c.query('SELECT level FROM player_assets WHERE telegram_id=$1 AND asset_id=$2 FOR UPDATE',[req.playerId,a.id])).rows[0];if(!row)throw Object.assign(new Error('Сначала купи этот актив'),{status:400});const fee=Math.max(1000,Math.floor(a.cost*.2));if(row.level>=5)throw Object.assign(new Error('Достигнут максимальный уровень'),{status:400});if(s.player.balance<fee)throw Object.assign(new Error('Недостаточно монет'),{status:400});await c.query('UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,fee]);await c.query('UPDATE player_assets SET level=level+1 WHERE telegram_id=$1 AND asset_id=$2',[req.playerId,a.id]);return getState(c,req.playerId,false)});res.json(state)}catch(e){next(e)}});
-app.get('/api/leaderboard',auth,async(req,res,next)=>{try{const r=await pool.query('SELECT first_name,username,balance FROM players ORDER BY balance DESC LIMIT 20');res.json({players:r.rows.map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name,balance:Number(x.balance)}))})}catch(e){next(e)}});
+app.get('/api/leaderboard',auth,async(req,res,next)=>{try{
+ const type=req.query.type==='realestate'?'realestate':'assets';
+ const catalogValues=ALL_ASSETS.map((a,i)=>`($${i*2+1}::text,$${i*2+2}::numeric,${a.id.startsWith('apt')?'TRUE':'FALSE'})`).join(',');
+ const params=ALL_ASSETS.flatMap(a=>[a.id,a.cost]);
+ const orderColumn=type==='realestate'?'real_estate_value':'asset_value';
+ const query=`WITH asset_catalog(asset_id,cost,is_real_estate) AS (VALUES ${catalogValues})
+ SELECT p.username,p.first_name,
+ COALESCE(SUM(ac.cost),0)::numeric AS asset_value,
+ COALESCE(SUM(ac.cost) FILTER (WHERE ac.is_real_estate),0)::numeric AS real_estate_value
+ FROM players p
+ LEFT JOIN player_assets pa ON pa.telegram_id=p.telegram_id
+ LEFT JOIN asset_catalog ac ON ac.asset_id=pa.asset_id
+ GROUP BY p.telegram_id,p.username,p.first_name
+ ORDER BY ${orderColumn} DESC,p.telegram_id ASC LIMIT 20`;
+ const r=await pool.query(query,params);
+ res.json({type,players:r.rows.map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name||'Игрок',value:Number(type==='realestate'?x.real_estate_value:x.asset_value)}))});
+ }catch(e){next(e)} });
 
 // Админ-доступ проверяется только на сервере по Telegram ID из переменной окружения.
 function requireAdmin(req,res,next) {
