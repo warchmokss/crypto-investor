@@ -451,23 +451,21 @@ $('transferSend').addEventListener('click',async()=>{const username=$('transferU
 document.querySelector('[data-page="crosswords"]').addEventListener('click',()=>{$('crosswordBalance').textContent=money(game?.player?.balance||0)+' ₽';if(!crosswordPuzzle.length)newCrossword();});
 document.querySelector('[data-page="transfers"]').addEventListener('click',()=>{$('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';});
 
-let leaderboardType='assets';
-async function renderLeaderboard(type=leaderboardType){
- leaderboardType=type;
+let leaderboardType='balance';
+async function renderLeaderboard(){
  const list=$('leaderboardList');
  const caption=$('leaderCaption');
- document.querySelectorAll('[data-leader-tab]').forEach(b=>b.classList.toggle('active',b.dataset.leaderTab===type));
- caption.textContent=type==='realestate'?'Стоимость квартир, домов и другой недвижимости':'Общая стоимость всех купленных игровых активов';
+ caption.textContent='Топ-100 игроков по размеру игрового баланса';
  if(demoMode){list.innerHTML='<p class="muted leader-empty">Рейтинг доступен после входа через Telegram — в демо-режиме данные других игроков не загружаются.</p>';return;}
- list.innerHTML='<p class="muted leader-empty">Загружаем рейтинг…</p>';
+ list.innerHTML='<p class="muted leader-empty">Загружаем топ-100 игроков…</p>';
  try{
-  const data=await api('/leaderboard?type='+encodeURIComponent(type));
-  if(!Array.isArray(data.players)||!data.players.length){list.innerHTML='<p class="muted leader-empty">Пока нет игроков с купленным имуществом.</p>';return;}
-  list.innerHTML=data.players.map(p=>`<article class="leader-row"><span class="leader-rank">${p.rank}</span><span class="leader-name">${escapeHtml(p.name)}</span><b class="leader-value">${money(p.value)} ₽</b></article>`).join('');
+  const data=await api('/leaderboard');
+  if(!Array.isArray(data.players)||!data.players.length){list.innerHTML='<p class="muted leader-empty">Пока нет зарегистрированных игроков.</p>';return;}
+  list.innerHTML=data.players.map(p=>`<article class="leader-row"><span class="leader-rank">${p.rank}</span><span class="leader-name">${escapeHtml(p.name)}</span><b class="leader-value">${money(p.balance)} ₽</b></article>`).join('');
  }catch(e){list.innerHTML='<p class="muted leader-empty">'+escapeHtml(e.message||'Не удалось загрузить рейтинг')+'</p>';}
 }
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
-document.querySelectorAll('[data-leader-tab]').forEach(b=>b.addEventListener('click',()=>renderLeaderboard(b.dataset.leaderTab)));
+
 document.querySelector('[data-page="leaders"]').addEventListener('click',()=>renderLeaderboard(leaderboardType));
 // Пока вкладка лидеров открыта, запрашиваем свежий рейтинг каждый час.
 setInterval(()=>{if(document.getElementById('leaders')?.classList.contains('active'))renderLeaderboard(leaderboardType);},60*60*1000);
