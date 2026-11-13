@@ -22,6 +22,7 @@
       <button class="nav-btn" data-page="exchange">Обменник</button>
       <button class="nav-btn" data-page="crosswords">Кроссворды</button>
       <button class="nav-btn" data-page="transfers">Переводы</button>
+      <button class="nav-btn" data-page="leaders">Лидеры</button>
       <button class="nav-btn" data-page="admin" id="adminNav" hidden>Админ-панель</button>
     </nav>
   </header>
@@ -166,6 +167,23 @@
         <p id="transferStatus" class="game-result" aria-live="polite">Проверяй юзернейм перед отправкой.</p>
       </div>
       <p class="game-disclaimer">Переводятся только игровые рубли внутри этого приложения. Это не банковский перевод и не перевод реальных денег. Для работы между разными Telegram-аккаунтами нужен запущенный сервер приложения и зарегистрированный получатель.</p>
+    </section>
+
+    <section id="leaders" class="page">
+      <div class="hero">
+        <p class="eyebrow">РЕЙТИНГ ИГРОКОВ</p>
+        <h1>Таблица <span>лидеров</span></h1>
+        <p class="muted">Сравнивай стоимость своей собственности с другими игроками CRYPTO INVESTOR.</p>
+      </div>
+      <div class="leader-tabs">
+        <button class="category-btn active" data-leader-tab="assets">🏆 По имуществу</button>
+        <button class="category-btn" data-leader-tab="realestate">🏠 По недвижимости</button>
+      </div>
+      <p class="leader-caption" id="leaderCaption">Общая стоимость всех купленных активов</p>
+      <div class="leaderboard-list" id="leaderboardList" aria-live="polite">
+        <p class="muted">Загружаем рейтинг игроков…</p>
+      </div>
+      <p class="muted leader-note">Рейтинг обновляется при открытии вкладки и показывает стоимость активов в игровых рублях.</p>
     </section>
 
     <section id="bets" class="page">
