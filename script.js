@@ -446,3 +446,9 @@ document.querySelector('[data-page="crosswords"]').addEventListener('click',()=>
 document.querySelector('[data-page="transfers"]').addEventListener('click',()=>{$('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';});
 // Мягко падающие золотые звёзды по краям фонового биткоина.
 (function makeGoldStars(){const layer=$('goldStars');if(!layer)return;for(let i=0;i<24;i++){const star=document.createElement('i');star.className='gold-star';star.textContent='✦';star.style.left=(2+Math.random()*96)+'%';star.style.animationDuration=(9+Math.random()*15)+'s';star.style.animationDelay=(-Math.random()*20)+'s';star.style.fontSize=(8+Math.random()*15)+'px';star.style.opacity=(.12+Math.random()*.3).toFixed(2);layer.appendChild(star);}})();
+
+// Запускаем подключение сразу после инициализации интерфейса.
+start().catch(error => {
+  const status = document.getElementById('saveStatus');
+  if (status) status.textContent = 'Ошибка запуска игры: ' + (error?.message || 'неизвестная ошибка');
+});
