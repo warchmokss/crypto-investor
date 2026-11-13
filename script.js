@@ -213,7 +213,7 @@ const ASSETS = {
     {id:'apt50',name:"Особняк",icon:"\ud83c\udfe0",cost:3211047636,income:9633143,description:"Недвижимость для сдачи в аренду и пассивного дохода."}
   ]
 };
-let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false;
+let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false, adminRole=null, adminTelegramId=null;
 const DEMO_KEY='crypto-investor-demo-v1';
 function saveDemo(){if(demoMode&&game)localStorage.setItem(DEMO_KEY,JSON.stringify(game));}
 function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:300},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}
@@ -340,7 +340,20 @@ async function start(){
     if(!authData?.token)throw new Error('Сервер не выдал токен авторизации');
     token=authData.token;
     await refresh();
-    try{const admin=await api('/admin/me');isAdmin=admin.isAdmin===true;$('adminNav').hidden=!isAdmin;}catch{isAdmin=false;$('adminNav').hidden=true;}
+    try{
+      const admin=await api('/admin/me');
+      isAdmin=admin.isAdmin===true;
+      adminRole=isAdmin?admin.role:null;
+      adminTelegramId=isAdmin?String(admin.telegramId):null;
+      $('adminNav').hidden=!isAdmin;
+      if(isAdmin){
+        $('adminIdentity').textContent=admin.role==='owner'?'Полный доступ владельца': 'Ограниченный доступ · начисления только на свой аккаунт';
+        $('adminPermission').textContent=admin.role==='owner'?'Можно начислять игровые рубли любому зарегистрированному игроку.':'Можно смотреть свой баланс и начислять игровые рубли только себе.';
+        $('adminBalance').textContent=money(admin.balance);
+        if(admin.role==='self'){$('adminTargetWrap').hidden=true;}
+        else {$('adminTargetWrap').hidden=false;}
+      }
+    }catch{isAdmin=false;adminRole=null;adminTelegramId=null;$('adminNav').hidden=true;}
     stopConnectionTimer();
     $('tapButton').disabled=false;
     $('saveStatus').textContent='Аккаунт Telegram подключён · прогресс хранится на сервере ✓';
@@ -348,7 +361,7 @@ async function start(){
     $('saveStatus').onclick=null;
   }catch(e){
     stopConnectionTimer();
-    token=null;isAdmin=false;game=null;
+    token=null;isAdmin=false;adminRole=null;adminTelegramId=null;game=null;
     $('adminNav').hidden=true;
     $('tapButton').disabled=true;
     $('saveStatus').textContent='Ошибка входа: '+(e.message||'не удалось авторизоваться')+' Нажми, чтобы повторить.';
@@ -364,11 +377,17 @@ $('tapButton').addEventListener('click',()=>action(async()=>{const old=game.play
 const adminCreditButton=$('adminCredit');
 if(adminCreditButton)adminCreditButton.addEventListener('click',async()=>{
   if(!isAdmin||demoMode)return;
-  const telegramId=$('adminTelegramId').value.trim(),amount=Number($('adminAmount').value),status=$('adminStatus'),btn=$('adminCredit');
-  if(!/^\\d{5,20}$/.test(telegramId)||!Number.isSafeInteger(amount)||amount<1||amount>1000000000){status.textContent='Проверь Telegram ID и сумму (1–1 000 000 000).';return;}
+  const telegramId=adminRole==='self'?adminTelegramId:$('adminTelegramId').value.trim();
+  const amount=Number($('adminAmount').value),status=$('adminStatus'),btn=$('adminCredit');
+  if(!/^\\d{5,20}$/.test(String(telegramId||''))||!Number.isSafeInteger(amount)||amount<1||amount>1000000000){status.textContent='Проверь Telegram ID и сумму (1–1 000 000 000).';return;}
   btn.disabled=true;status.textContent='Проверяем права и начисляем…';
-  try{const result=await api('/admin/credit',{telegramId,amount});status.textContent='Готово: начислено '+money(result.credited)+' игровых ₽. Новый баланс игрока: '+money(result.balance)+' ₽.';$('adminAmount').value='';}
-  catch(e){status.textContent=e.message||'Не удалось начислить игровые рубли.';}
+  try{
+    const result=await api('/admin/credit',{telegramId,amount});
+    status.textContent='Готово: начислено '+money(result.credited)+' игровых ₽. Новый баланс: '+money(result.balance)+' ₽.';
+    $('adminBalance').textContent=money(result.balance);
+    $('adminAmount').value='';
+    if(game?.player) {game.player.balance=result.balance;renderAll();}
+  } catch(e){status.textContent=e.message||'Не удалось начислить игровые рубли.';}
   finally{btn.disabled=false;}
 });
 document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.page).classList.add('active');}));
