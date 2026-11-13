@@ -378,7 +378,6 @@ $('businessGrid').addEventListener('click',e=>{const sell=e.target.closest('[dat
 $('garageGrid').addEventListener('click',e=>{const b=e.target.closest('[data-garage-sell]');if(b&&confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:b.dataset.garageSell}),'Объект продан!');});
 document.querySelectorAll('[data-garage]').forEach(b=>b.addEventListener('click',()=>{garageCategory=b.dataset.garage;document.querySelectorAll('[data-garage]').forEach(x=>x.classList.toggle('active',x===b));renderGarage();}));
 $('propertyUpgradeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-property-upgrade]');if(b)action(()=>api('/game/upgrade-asset',{assetId:b.dataset.propertyUpgrade}),'Имущество улучшено!');});
-$('buyButton').addEventListener('click',()=>$('buyMessage').textContent='Покупка пока отключена: платежи не подключены.');
 window.addEventListener('focus',()=>{if(token&&!busy)refresh().catch(()=>{});});
 
 
@@ -407,65 +406,6 @@ updateDisplay=function(){oldUpdateDisplay();if($('betBalance'))betBalance();};
 const tapButton=$('tapButton');
 tapButton.addEventListener('click',e=>{const r=tapButton.getBoundingClientRect(),el=document.createElement('span');el.className='tap-float';el.textContent='+'+money(game?.player?.tapReward||300)+' ₽';el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+20)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),900);});
 
-
-/* Обменник: конвертация между всеми поддерживаемыми валютами. */
-let exchangeRates = null; // количество единиц валюты за 1 RUB
-const exchangeDigits = {RUB:2,USD:2,EUR:2,KZT:2,BYN:2,BTC:8};
-function formatExchange(value, currency) {
-  if (!Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:exchangeDigits[currency],minimumFractionDigits:currency==='BTC'?8:2}).format(value)+' '+currency;
-}
-async function loadExchangeRates() {
-  const status=$('exchangeStatus');
-  status.textContent='Загружаем актуальные курсы…';
-  $('exchangeRefresh').disabled=true;
-  try {
-    const [fiatRes,btcRes]=await Promise.all([
-      fetch('https://open.er-api.com/v6/latest/RUB'),
-      fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=rub')
-    ]);
-    if(!fiatRes.ok||!btcRes.ok) throw new Error('Не удалось получить курсы');
-    const fiat=await fiatRes.json(),btc=await btcRes.json();
-    if(fiat.result!=='success'||!fiat.rates||!btc.bitcoin?.rub) throw new Error('Некорректный ответ сервиса курсов');
-    const rates={RUB:1,USD:fiat.rates.USD,EUR:fiat.rates.EUR,KZT:fiat.rates.KZT,BYN:fiat.rates.BYN,BTC:1/Number(btc.bitcoin.rub)};
-    if(Object.values(rates).some(v=>!Number.isFinite(v)||v<=0)) throw new Error('Некоторые курсы недоступны');
-    exchangeRates=rates;
-    status.textContent='Курсы обновлены · '+new Date().toLocaleTimeString('ru-RU');
-    renderExchange();
-  } catch(e) {
-    status.textContent='Не удалось загрузить курсы. Проверь подключение к интернету и попробуй ещё раз.';
-    $('exchangeOutput').textContent='Курс недоступен';
-    $('exchangeRate').textContent='Нет данных для пересчёта';
-  } finally {
-    $('exchangeRefresh').disabled=false;
-  }
-}
-function renderExchange() {
-  if(!exchangeRates)return;
-  const amount=Number($('exchangeAmount').value);
-  const from=$('exchangeFrom').value,to=$('exchangeTo').value;
-  if($('exchangeAmount').value.trim()===''||!Number.isFinite(amount)||amount<0){
-    $('exchangeOutput').textContent='Введи корректную сумму';
-    $('exchangeRate').textContent='';
-    return;
-  }
-  const rate=exchangeRates[to]/exchangeRates[from];
-  $('exchangeOutput').textContent=formatExchange(amount*rate,to);
-  $('exchangeRate').textContent='1 '+from+' = '+formatExchange(rate,to);
-}
-$('exchangeAmount').addEventListener('input',renderExchange);
-$('exchangeFrom').addEventListener('change',renderExchange);
-$('exchangeTo').addEventListener('change',renderExchange);
-$('exchangeSwap').addEventListener('click',()=>{
-  const from=$('exchangeFrom'),to=$('exchangeTo'),old=from.value;
-  from.value=to.value;to.value=old;renderExchange();
-});
-$('exchangeRefresh').addEventListener('click',loadExchangeRates);
-document.querySelector('[data-page="exchange"]').addEventListener('click',()=>{
-  $('exchangeBalance').textContent=money(game?.player?.balance||0)+' ₽';
-  if(!exchangeRates)loadExchangeRates();
-  else renderExchange();
-});
 
 
 // Словесные кроссворды: наборы подсказок перемешиваются для каждого раунда.
