@@ -216,9 +216,9 @@ const ASSETS = {
 let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false;
 const DEMO_KEY='crypto-investor-demo-v1';
 function saveDemo(){if(demoMode&&game)localStorage.setItem(DEMO_KEY,JSON.stringify(game));}
-function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:50},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}
-function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||50},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0};}
-function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(!saved||!saved.player||typeof saved.player!=='object')return emptyGame();const valid=normalizeGameState(saved);if(!valid.purchasedUpgrades.length&&Number(valid.player.tapReward)!==50){valid.player.tapReward=50;localStorage.setItem(DEMO_KEY,JSON.stringify(valid));}return valid;}catch{return emptyGame();}}
+function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:300},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}
+function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||300},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0};}
+function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(!saved||!saved.player||typeof saved.player!=='object')return emptyGame();const valid=normalizeGameState(saved);if(!valid.purchasedUpgrades.length&&Number(valid.player.tapReward)===50){valid.player.tapReward=300;localStorage.setItem(DEMO_KEY,JSON.stringify(valid));}return valid;}catch{return emptyGame();}}
 function demoApi(path,body={}){
   if(path==='/game/state')return game;
   const p=game.player;
@@ -405,7 +405,7 @@ $('bjStand').addEventListener('click',()=>{if(bj&&bj.hidden)finishBJ();});
 const oldUpdateDisplay=updateDisplay;
 updateDisplay=function(){oldUpdateDisplay();if($('betBalance'))betBalance();};
 const tapButton=$('tapButton');
-tapButton.addEventListener('click',e=>{const r=tapButton.getBoundingClientRect(),el=document.createElement('span');el.className='tap-float';el.textContent='+50 ₽';el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+20)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),900);});
+tapButton.addEventListener('click',e=>{const r=tapButton.getBoundingClientRect(),el=document.createElement('span');el.className='tap-float';el.textContent='+'+money(game?.player?.tapReward||300)+' ₽';el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+20)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),900);});
 
 
 /* Обменник: конвертация между всеми поддерживаемыми валютами. */
