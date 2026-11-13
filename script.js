@@ -452,23 +452,29 @@ document.querySelector('[data-page="crosswords"]').addEventListener('click',()=>
 document.querySelector('[data-page="transfers"]').addEventListener('click',()=>{$('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';});
 
 let leaderboardType='balance';
-async function renderLeaderboard(){
+let leaderboardType='balance';
+async function renderLeaderboard(type=leaderboardType){
+ leaderboardType=type;
  const list=$('leaderboardList');
  const caption=$('leaderCaption');
- caption.textContent='Топ-100 игроков по размеру игрового баланса';
+ const isAssets=leaderboardType==='assets';
+ caption.textContent=isAssets?'Топ-100 игроков по стоимости машин, бизнеса и другого имущества':'Топ-100 игроков по размеру игрового баланса';
+ document.querySelectorAll('[data-leader-type]').forEach(btn=>btn.classList.toggle('active',btn.dataset.leaderType===leaderboardType));
  if(demoMode){list.innerHTML='<p class="muted leader-empty">Рейтинг доступен после входа через Telegram — в демо-режиме данные других игроков не загружаются.</p>';return;}
  list.innerHTML='<p class="muted leader-empty">Загружаем топ-100 игроков…</p>';
  try{
-  const data=await api('/leaderboard');
+  const data=await api('/leaderboard?type='+leaderboardType);
   if(!Array.isArray(data.players)||!data.players.length){list.innerHTML='<p class="muted leader-empty">Пока нет зарегистрированных игроков.</p>';return;}
-  list.innerHTML=data.players.map(p=>`<article class="leader-row"><span class="leader-rank">${p.rank}</span><span class="leader-name">${escapeHtml(p.name)}</span><b class="leader-value">${money(p.balance)} ₽</b></article>`).join('');
+  const field=isAssets?'assetsValue':'balance';
+  list.innerHTML=data.players.map(p=>`<article class="leader-row"><span class="leader-rank">${p.rank}</span><span class="leader-name">${escapeHtml(p.name)}</span><b class="leader-value">${money(p[field])} ₽</b></article>`).join('');
  }catch(e){list.innerHTML='<p class="muted leader-empty">'+escapeHtml(e.message||'Не удалось загрузить рейтинг')+'</p>';}
 }
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
-document.querySelector('[data-page="leaders"]').addEventListener('click',()=>renderLeaderboard(leaderboardType));
-// Пока вкладка лидеров открыта, запрашиваем свежий рейтинг каждый час.
-setInterval(()=>{if(document.getElementById('leaders')?.classList.contains('active'))renderLeaderboard(leaderboardType);},60*60*1000);
+document.querySelector('[data-page="leaders"]').addEventListener('click',()=>renderLeaderboard());
+document.querySelectorAll('[data-leader-type]').forEach(btn=>btn.addEventListener('click',()=>renderLeaderboard(btn.dataset.leaderType)));
+// Пока вкладка лидеров открыта, обновляем выбранный рейтинг каждый час.
+setInterval(()=>{if(document.getElementById('leaders')?.classList.contains('active'))renderLeaderboard();},60*60*1000);
 
 // Мягко падающие золотые звёзды по краям фонового биткоина.
 (function makeGoldStars(){const layer=$('goldStars');if(!layer)return;for(let i=0;i<24;i++){const star=document.createElement('i');star.className='gold-star';star.textContent='✦';star.style.left=(2+Math.random()*96)+'%';star.style.animationDuration=(9+Math.random()*15)+'s';star.style.animationDelay=(-Math.random()*20)+'s';star.style.fontSize=(8+Math.random()*15)+'px';star.style.opacity=(.12+Math.random()*.3).toFixed(2);layer.appendChild(star);}})();
