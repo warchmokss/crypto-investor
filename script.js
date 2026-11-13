@@ -491,6 +491,26 @@ $('crosswordNew').addEventListener('click',()=>newCrossword());
 $('transferSend').addEventListener('click',async()=>{const username=$('transferUsername').value.trim().replace(/^@/,'');const amount=Math.floor(Number($('transferAmount').value));const status=$('transferStatus');if(!/^[A-Za-z0-9_]{5,32}$/.test(username)){status.textContent='Введи корректный Telegram username (5–32 символа).';return;}if(!Number.isSafeInteger(amount)||amount<1){status.textContent='Укажи целую сумму больше нуля.';return;}if(!game||amount>game.player.balance){status.textContent='Недостаточно игровых рублей.';return;}if(demoMode){status.textContent='Переводы между пользователями доступны только в опубликованной Telegram Mini App с подключённым сервером. В локальном предпросмотре получателя проверить нельзя.';return;}const btn=$('transferSend');btn.disabled=true;status.textContent='Выполняется перевод…';try{const result=await api('/game/transfer',{username,amount});game=result.state;renderAll();$('transferBalance').textContent=money(game.player.balance)+' ₽';status.textContent=`Перевод ${money(amount)} ₽ пользователю @${result.recipient} выполнен.`;$('transferAmount').value='';}catch(e){status.textContent=e.message||'Не удалось выполнить перевод.';}finally{btn.disabled=false;}});
 document.querySelector('[data-page="crosswords"]').addEventListener('click',()=>{$('crosswordBalance').textContent=money(game?.player?.balance||0)+' ₽';if(!crosswordPuzzle.length)newCrossword();});
 document.querySelector('[data-page="transfers"]').addEventListener('click',()=>{$('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';});
+
+let leaderboardType='assets';
+async function renderLeaderboard(type=leaderboardType){
+ leaderboardType=type;
+ const list=$('leaderboardList');
+ const caption=$('leaderCaption');
+ document.querySelectorAll('[data-leader-tab]').forEach(b=>b.classList.toggle('active',b.dataset.leaderTab===type));
+ caption.textContent=type==='realestate'?'Стоимость квартир, домов и другой недвижимости':'Общая стоимость всех купленных игровых активов';
+ if(demoMode){list.innerHTML='<p class="muted leader-empty">Рейтинг доступен после входа через Telegram — в демо-режиме данные других игроков не загружаются.</p>';return;}
+ list.innerHTML='<p class="muted leader-empty">Загружаем рейтинг…</p>';
+ try{
+  const data=await api('/leaderboard?type='+encodeURIComponent(type));
+  if(!Array.isArray(data.players)||!data.players.length){list.innerHTML='<p class="muted leader-empty">Пока нет игроков с купленным имуществом.</p>';return;}
+  list.innerHTML=data.players.map(p=>`<article class="leader-row"><span class="leader-rank">${p.rank}</span><span class="leader-name">${escapeHtml(p.name)}</span><b class="leader-value">${money(p.value)} ₽</b></article>`).join('');
+ }catch(e){list.innerHTML='<p class="muted leader-empty">'+escapeHtml(e.message||'Не удалось загрузить рейтинг')+'</p>';}
+}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+document.querySelectorAll('[data-leader-tab]').forEach(b=>b.addEventListener('click',()=>renderLeaderboard(b.dataset.leaderTab)));
+document.querySelector('[data-page="leaders"]').addEventListener('click',()=>renderLeaderboard(leaderboardType));
+
 // Мягко падающие золотые звёзды по краям фонового биткоина.
 (function makeGoldStars(){const layer=$('goldStars');if(!layer)return;for(let i=0;i<24;i++){const star=document.createElement('i');star.className='gold-star';star.textContent='✦';star.style.left=(2+Math.random()*96)+'%';star.style.animationDuration=(9+Math.random()*15)+'s';star.style.animationDelay=(-Math.random()*20)+'s';star.style.fontSize=(8+Math.random()*15)+'px';star.style.opacity=(.12+Math.random()*.3).toFixed(2);layer.appendChild(star);}})();
 
