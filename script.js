@@ -289,27 +289,50 @@ async function refresh(){game=normalizeGameState(await api('/game/state'));rende
 async function action(fn,successText){if(busy)return;busy=true;try{game=await fn();renderAll();$('tapMessage').textContent=successText||'Готово!';$('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';}catch(e){$('tapMessage').textContent=e.message;$('saveStatus').textContent='Не удалось выполнить действие';}finally{busy=false}}
 async function start(){
   const tg=window.Telegram?.WebApp;
-  // Обычный браузер: локальный режим предпросмотра. В Telegram используется серверный аккаунт.
-  if(!tg||!tg.initData){
+  // Демо включается только в обычном браузере. В Telegram никогда не подменяем
+  // отсутствие initData локальной игрой: ждём данные и показываем точную ошибку.
+  if(!tg){
     demoMode=true;
     game=loadDemo();
     $('tapButton').disabled=false;
     renderAll();
-    $('saveStatus').textContent='Демо-режим браузера: баланс и покупки сохраняются на этом устройстве. Для общего аккаунта открой игру через Telegram.';
+    $('saveStatus').textContent='Демо-режим браузера. Для серверного аккаунта открой игру из Telegram.';
     return;
   }
-  tg.ready();tg.expand();
-  try{const authData=await api('/auth/telegram',{initData:tg.initData});token=authData.token;await refresh();try{const admin=await api('/admin/me');isAdmin=admin.isAdmin===true;$('adminNav').hidden=!isAdmin;}catch{isAdmin=false;$('adminNav').hidden=true;}$('tapButton').disabled=false;$('saveStatus').textContent='Аккаунт Telegram подключён · прогресс хранится на сервере ✓';}
-  catch(e){
-    token=null; isAdmin=false; game=null;
+  demoMode=false;
+  tg.ready();
+  try{tg.expand();}catch{}
+  $('tapButton').disabled=true;
+  $('saveStatus').textContent='Получаем данные Telegram…';
+  let initData=tg.initData||'';
+  for(let i=0;!initData&&i<20;i++){
+    await new Promise(resolve=>setTimeout(resolve,250));
+    initData=window.Telegram?.WebApp?.initData||'';
+  }
+  if(!initData){
+    throw new Error('Telegram не передал данные запуска. Закрой мини-приложение и открой его кнопкой «Играть» в боте.');
+  }
+  try{
+    $('saveStatus').textContent='Проверяем аккаунт на сервере…';
+    const authData=await api('/auth/telegram',{initData});
+    if(!authData?.token)throw new Error('Сервер не выдал токен авторизации');
+    token=authData.token;
+    await refresh();
+    try{const admin=await api('/admin/me');isAdmin=admin.isAdmin===true;$('adminNav').hidden=!isAdmin;}catch{isAdmin=false;$('adminNav').hidden=true;}
+    $('tapButton').disabled=false;
+    $('saveStatus').textContent='Аккаунт Telegram подключён · прогресс хранится на сервере ✓';
+    $('saveStatus').style.cursor='';
+    $('saveStatus').onclick=null;
+  }catch(e){
+    token=null;isAdmin=false;game=null;
     $('adminNav').hidden=true;
     $('tapButton').disabled=true;
-    $('saveStatus').textContent='Не удалось подключиться: '+(e.message||'ошибка авторизации')+' Нажми сюда, чтобы повторить.';
+    $('saveStatus').textContent='Ошибка входа: '+(e.message||'не удалось авторизоваться')+' Нажми, чтобы повторить.';
     $('saveStatus').style.cursor='pointer';
     $('saveStatus').onclick=()=>{
       $('saveStatus').onclick=null;
-      $('saveStatus').textContent='Повторное подключение к серверу…';
-      start();
+      $('saveStatus').textContent='Повторная попытка входа…';
+      start().catch(err=>{$('saveStatus').textContent='Ошибка запуска: '+err.message;});
     };
   }
 }
