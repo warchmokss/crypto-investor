@@ -84,7 +84,7 @@ async function getState(client,id,applyIncome=true) {
 app.post('/api/auth/telegram', async (req,res,next)=>{ try {
   const user=verifyTelegramInitData(req.body?.initData);
   await pool.query(`INSERT INTO players(telegram_id,username,first_name) VALUES($1,$2,$3) ON CONFLICT(telegram_id) DO UPDATE SET username=EXCLUDED.username,first_name=EXCLUDED.first_name,updated_at=NOW()`,[user.id,user.username,user.firstName]);
-  await pool.query(`UPDATE players SET tap_reward=50 WHERE telegram_id=$1 AND tap_reward=500 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)`,[user.id]);
+  await pool.query(`UPDATE players SET tap_reward=300 WHERE telegram_id=$1 AND tap_reward=50 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)`,[user.id]);
   res.json({ token:makeSession(user) });
  } catch(e){next(Object.assign(e,{status:401}));} });
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
