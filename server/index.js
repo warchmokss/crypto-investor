@@ -129,10 +129,10 @@ app.post('/api/admin/credit',auth,requireAdmin,async(req,res,next)=>{
 });
 
 // Telegram bot commands: only ADMIN_TELEGRAM_ID may use /give and /balance.
-async function sendBotMessage(chatId, text) {
+async function sendBotMessage(chatId, text, replyMarkup = null) {
   const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: 'POST', headers: {'content-type':'application/json'},
-    body: JSON.stringify({chat_id:chatId,text})
+    body: JSON.stringify({chat_id:chatId,text,...(replyMarkup ? {reply_markup:replyMarkup} : {})})
   });
   if (!response.ok) throw new Error('Telegram sendMessage failed');
 }
@@ -147,6 +147,14 @@ app.post('/api/telegram/webhook', async (req,res) => {
     const senderId = String(message?.from?.id || '');
     const chatId = message?.chat?.id;
     if (!text || !chatId) return;
+    // /start must be available to every player and launch the app as a Telegram Mini App.
+    if (/^\\/start(?:\\s|$)/i.test(text)) {
+      const appUrl = PUBLIC_URL.replace(/\\/+$/, '');
+      await sendBotMessage(chatId, 'Нажми кнопку «Играть», чтобы открыть актуальную версию CRYPTO INVESTOR.', {
+        inline_keyboard: [[{ text: '🎮 Играть', web_app: { url: appUrl } }]]
+      });
+      return;
+    }
     if (senderId !== String(process.env.ADMIN_TELEGRAM_ID || '')) {
       await sendBotMessage(chatId, 'Команды администратора доступны только владельцу игры.');
       return;
@@ -194,7 +202,16 @@ app.post('/api/telegram/webhook', async (req,res) => {
 
 app.get('/health',async(req,res)=>{try{await pool.query('SELECT 1');res.json({ok:true})}catch{res.status(503).json({ok:false})}});
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-app.use(express.static(root,{index:'index.html',maxAge:process.env.NODE_ENV==='production'?'1h':0}));
+app.use(express.static(root,{
+  index:'index.html',
+  maxAge:0,
+  setHeaders(res){
+    // Telegram's in-app browser must fetch the current HTML, JS and CSS after deploys.
+    res.setHeader('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma','no-cache');
+    res.setHeader('Expires','0');
+  }
+}));
 app.use((err,req,res,next)=>{req.log?.error(err);res.status(err.status||500).json({error:err.status?err.message:'Внутренняя ошибка сервера'});});
 const server=app.listen(PORT,()=>console.log(`CRYPTO INVESTOR listening on ${PORT}`));
 if (TELEGRAM_WEBHOOK_SECRET) {
