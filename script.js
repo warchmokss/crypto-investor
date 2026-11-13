@@ -236,7 +236,22 @@ const getAssetIncome=a=>Math.floor(a.income*(1+(game?.propertyLevels?.[a.id]||0)
 
 async function api(path,body) {
   if(demoMode)return demoApi(path,body);
-   const response=await fetch(`https://crypto-investor-72f3.onrender.com/api${path}`,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},...(body?{body:JSON.stringify(body)}:{})});
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),15000);
+  let response;
+  try {
+    response=await fetch(`https://crypto-investor-72f3.onrender.com/api${path}`,{
+      method:body?'POST':'GET',
+      headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},
+      ...(body?{body:JSON.stringify(body)}:{}),
+      signal:controller.signal
+    });
+  } catch(error) {
+    if(error.name==='AbortError') throw new Error('Сервер не ответил за 15 секунд. Проверь соединение и нажми «Повторить».');
+    throw new Error('Не удалось связаться с игровым сервером. Проверь интернет и попробуй ещё раз.');
+  } finally {
+    clearTimeout(timeout);
+  }
   const data=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(data.error||`Ошибка сервера (${response.status})`);
   return data;
@@ -286,10 +301,16 @@ async function start(){
   tg.ready();tg.expand();
   try{const authData=await api('/auth/telegram',{initData:tg.initData});token=authData.token;await refresh();try{const admin=await api('/admin/me');isAdmin=admin.isAdmin===true;$('adminNav').hidden=!isAdmin;}catch{isAdmin=false;$('adminNav').hidden=true;}$('tapButton').disabled=false;$('saveStatus').textContent='Аккаунт Telegram подключён · прогресс хранится на сервере ✓';}
   catch(e){
-    // Если страница открыта вне Telegram или Telegram initData недоступен, не оставляем game=null.
-    demoMode=true; token=null; isAdmin=false; game=loadDemo();
-    $('adminNav').hidden=true; $('tapButton').disabled=false; renderAll();
-    $('saveStatus').textContent='Не удалось подключить аккаунт Telegram: '+(e.message||'ошибка авторизации')+'. Включён локальный демо-режим.';
+    token=null; isAdmin=false; game=null;
+    $('adminNav').hidden=true;
+    $('tapButton').disabled=true;
+    $('saveStatus').textContent='Не удалось подключиться: '+(e.message||'ошибка авторизации')+' Нажми сюда, чтобы повторить.';
+    $('saveStatus').style.cursor='pointer';
+    $('saveStatus').onclick=()=>{
+      $('saveStatus').onclick=null;
+      $('saveStatus').textContent='Повторное подключение к серверу…';
+      start();
+    };
   }
 }
 $('tapButton').addEventListener('click',()=>action(async()=>{const old=game.player.taps;const next=await api('/game/tap',{});if(next.player.taps%100===0&&next.player.taps!==old)showFireworks();return next;},'Монеты начислены!'));
