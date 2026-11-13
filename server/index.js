@@ -148,8 +148,8 @@ app.post('/api/telegram/webhook', async (req,res) => {
     const chatId = message?.chat?.id;
     if (!text || !chatId) return;
     // /start must be available to every player and launch the app as a Telegram Mini App.
-    if (/^\\/start(?:\\s|$)/i.test(text)) {
-      const appUrl = PUBLIC_URL.replace(/\\/+$/, '');
+    if (/^\/start(?:\s|$)/i.test(text)) {
+      const appUrl = PUBLIC_URL.replace(/\/+$/, '');
       await sendBotMessage(chatId, 'Нажми кнопку «Играть», чтобы открыть актуальную версию CRYPTO INVESTOR.', {
         inline_keyboard: [[{ text: '🎮 Играть', web_app: { url: appUrl } }]]
       });
@@ -191,7 +191,7 @@ app.post('/api/telegram/webhook', async (req,res) => {
       await sendBotMessage(chatId, `Баланс @${matches.rows[0].username}: ${Number(matches.rows[0].balance).toLocaleString('ru-RU')} игровых рублей.`);
       return;
     }
-    if (/^\/start(?:\s|$)/i.test(text) || /^\/help(?:\s|$)/i.test(text)) {
+    if (/^\/help(?:\s|$)/i.test(text)) {
       await sendBotMessage(chatId, 'Команды владельца:\n/give @username сумма — начислить игровые рубли\n/balance @username — посмотреть баланс');
     }
   } catch (error) {
