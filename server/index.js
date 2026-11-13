@@ -211,19 +211,22 @@ app.post('/api/telegram/webhook', async (req,res) => {
       await sendBotMessage(chatId, 'У тебя нет доступа к командам администратора.');
       return;
     }
-    const give = text.match(/^\/give(?:@\w+)?\s+@([A-Za-z0-9_]{5,32})\s+(\d{1,10})$/i);
-    const balance = text.match(/^\/balance(?:@\w+)?\s+@([A-Za-z0-9_]{5,32})$/i);
+    const give = text.match(/^\/give(?:@\w+)?\s+(@?[A-Za-z0-9_]{5,32}|\d{5,20})\s+(\d{1,10})$/i);
+    const balance = text.match(/^\/balance(?:@\w+)?\s+(@?[A-Za-z0-9_]{5,32}|\d{5,20})$/i);
     if (give) {
-      const username = give[1];
+      const target = give[1].replace(/^@/, '');
       const amount = Number(give[2]);
       if (!Number.isSafeInteger(amount) || amount < 1 || amount > 1000000000) {
         await sendBotMessage(chatId, 'Сумма должна быть от 1 до 1 000 000 000 игровых рублей.');
         return;
       }
       const result = await transaction(async c => {
-        const matches = await c.query('SELECT telegram_id, username FROM players WHERE lower(username)=lower($1) FOR UPDATE', [username]);
+        const byId = /^\d{5,20}$/.test(target);
+        const matches = byId
+          ? await c.query('SELECT telegram_id, username FROM players WHERE telegram_id=$1 FOR UPDATE', [target])
+          : await c.query('SELECT telegram_id, username FROM players WHERE lower(username)=lower($1) FOR UPDATE', [target]);
         if (matches.rowCount === 0) return {error:'Игрок не найден. Пусть он хотя бы один раз откроет игру в Telegram.'};
-        if (matches.rowCount > 1) return {error:'Найдено несколько совпадений. Используй Telegram ID в админ-панели.'};
+        if (matches.rowCount > 1) return {error:'Найдено несколько совпадений. Используй Telegram ID.'};
         const targetId = String(matches.rows[0].telegram_id);
         if (adminRole === 'self' && targetId !== senderId) return {error:'Тебе разрешено начислять игровые рубли только на свой аккаунт.'};
         const adminExists = await c.query('SELECT 1 FROM players WHERE telegram_id=$1', [senderId]);
@@ -236,7 +239,11 @@ app.post('/api/telegram/webhook', async (req,res) => {
       return;
     }
     if (balance) {
-      const matches = await pool.query('SELECT telegram_id,username,balance FROM players WHERE lower(username)=lower($1)', [balance[1]]);
+      const target = balance[1].replace(/^@/, '');
+      const byId = /^\d{5,20}$/.test(target);
+      const matches = byId
+        ? await pool.query('SELECT telegram_id,username,balance FROM players WHERE telegram_id=$1', [target])
+        : await pool.query('SELECT telegram_id,username,balance FROM players WHERE lower(username)=lower($1)', [target]);
       if (matches.rowCount !== 1) {
         await sendBotMessage(chatId, matches.rowCount ? 'Найдено несколько совпадений.' : 'Игрок не найден. Он должен хотя бы раз открыть игру.');
         return;
@@ -245,11 +252,15 @@ app.post('/api/telegram/webhook', async (req,res) => {
         await sendBotMessage(chatId, 'Тебе разрешено смотреть только собственный баланс.');
         return;
       }
-      await sendBotMessage(chatId, `Баланс @${matches.rows[0].username || balance[1]}: ${Number(matches.rows[0].balance).toLocaleString('ru-RU')} игровых рублей.`);
+      await sendBotMessage(chatId, `Баланс ${matches.rows[0].username ? '@'+matches.rows[0].username : 'игрока'}: ${Number(matches.rows[0].balance).toLocaleString('ru-RU')} игровых рублей.`);
+      return;
+    }
+    if (/^\/(give|balance)(?:@\w+)?(?:\s|$)/i.test(text)) {
+      await sendBotMessage(chatId, 'Формат команды:\n/give @username сумма — начислить игровые рубли\n/give Telegram_ID сумма — начислить по ID\n/balance @username или /balance Telegram_ID — посмотреть баланс');
       return;
     }
     if (/^\/help(?:\s|$)/i.test(text)) {
-      await sendBotMessage(chatId, 'Команды владельца:\n/give @username сумма — начислить игровые рубли\n/balance @username — посмотреть баланс');
+      await sendBotMessage(chatId, 'Команды администратора:\n/give @username сумма — начислить игровые рубли\n/give Telegram_ID сумма — начислить по ID\n/balance @username или /balance Telegram_ID — посмотреть баланс');
     }
   } catch (error) {
     req.log?.error(error);
@@ -272,6 +283,16 @@ app.use(express.static(root,{
 app.use((err,req,res,next)=>{req.log?.error(err);res.status(err.status||500).json({error:err.status?err.message:'Внутренняя ошибка сервера'});});
 const server=app.listen(PORT,()=>console.log(`CRYPTO INVESTOR listening on ${PORT}`));
 if (TELEGRAM_WEBHOOK_SECRET) {
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands`, {
+    method:'POST', headers:{'content-type':'application/json'},
+    body:JSON.stringify({commands:[
+      {command:'start',description:'Открыть CRYPTO INVESTOR'},
+      {command:'give',description:'Начислить игровые рубли'},
+      {command:'balance',description:'Посмотреть баланс игрока'},
+      {command:'help',description:'Помощь по командам'}
+    ]})
+  }).then(r=>r.json()).then(data=>console.log('Telegram commands registration:',data.ok?'ok':'failed'))
+    .catch(error=>console.error('Telegram commands registration failed:',error.message));
   fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
     method:'POST', headers:{'content-type':'application/json'},
     body:JSON.stringify({url:`${PUBLIC_URL}/api/telegram/webhook`,secret_token:TELEGRAM_WEBHOOK_SECRET,allowed_updates:['message']})
