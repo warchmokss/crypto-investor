@@ -181,3 +181,14 @@ body:before{content:"₿";position:fixed;z-index:-1;left:50%;top:48%;transform:t
 .crossword-card{max-width:700px}.crossword-clues{display:grid;gap:12px;margin:18px 0}.crossword-clue{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,200px);align-items:center;gap:14px;padding:13px;border:1px solid #55e88922;border-radius:12px;background:#07150c;color:#d9f0df}.crossword-clue small{display:block;color:#79a989;font-size:11px;margin-top:5px}.crossword-clue input{min-width:0;width:100%;padding:11px;border:1px solid #4a805a;border-radius:9px;background:#0a1a10;color:#fff;font:inherit;text-transform:uppercase}.crossword-clue input.correct-answer{border-color:#55e889;background:#103b21}.crossword-clue input.wrong-answer{border-color:#e67c69}.crossword-note{display:block;margin-top:16px;line-height:1.5;text-align:center}.exchange-input{margin-bottom:10px}.crossword-card .secondary{background:#173323;color:#dfffea}
 @media(max-width:600px){.crossword-clue{grid-template-columns:1fr}.crossword-clue input{max-width:100%}}
 \n.admin-card{max-width:620px}.admin-card .game-action{margin-top:8px}\n
+/* Таблица лидеров */
+.leader-tabs{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:18px 0}
+.leader-caption{text-align:center;color:#9eb2ce;margin:8px 0 18px}
+.leaderboard-list{display:grid;gap:9px;max-width:760px;margin:0 auto}
+.leader-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:12px;padding:15px 17px;border:1px solid #55e88928;border-radius:13px;background:linear-gradient(135deg,#102719,#0a170f)}
+.leader-rank{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#183d27;color:#9cf5b6;font-weight:900}
+.leader-name{min-width:0;overflow-wrap:anywhere;color:#e9f7ed;font-weight:700}
+.leader-value{color:#70ee9a;text-align:right;font-variant-numeric:tabular-nums}
+.leader-empty{text-align:center;padding:24px;border:1px dashed #ffffff30;border-radius:13px}
+.leader-note{text-align:center;margin-top:18px;font-size:12px}
+@media(max-width:480px){.leader-row{grid-template-columns:34px minmax(0,1fr);gap:9px;padding:12px}.leader-rank{width:30px;height:30px}.leader-value{grid-column:2;text-align:left}}
