@@ -361,7 +361,8 @@ async function start(){
   }
 }
 $('tapButton').addEventListener('click',()=>action(async()=>{const old=game.player.taps;const next=await api('/game/tap',{});if(next.player.taps%100===0&&next.player.taps!==old)showFireworks();return next;},'Монеты начислены!'));
-$('adminCredit').addEventListener('click',async()=>{
+const adminCreditButton=$('adminCredit');
+if(adminCreditButton)adminCreditButton.addEventListener('click',async()=>{
   if(!isAdmin||demoMode)return;
   const telegramId=$('adminTelegramId').value.trim(),amount=Number($('adminAmount').value),status=$('adminStatus'),btn=$('adminCredit');
   if(!/^\\d{5,20}$/.test(telegramId)||!Number.isSafeInteger(amount)||amount<1||amount>1000000000){status.textContent='Проверь Telegram ID и сумму (1–1 000 000 000).';return;}
