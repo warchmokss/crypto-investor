@@ -390,7 +390,7 @@ if(adminCreditButton)adminCreditButton.addEventListener('click',async()=>{
   } catch(e){status.textContent=e.message||'Не удалось начислить игровые рубли.';}
   finally{btn.disabled=false;}
 });
-document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.page).classList.add('active');}));
+document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.page).classList.add('active');if(btn.dataset.page==='leaders')renderLeaderboard(leaderboardType);}));
 $('upgradeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-upgrade]');if(b)action(()=>api('/game/buy-upgrade',{upgradeId:b.dataset.upgrade}),'Апгрейд куплен!');});
 $('businessCategories').addEventListener('click',e=>{const b=e.target.closest('[data-category]');if(!b)return;activeCategory=b.dataset.category;document.querySelectorAll('.category-btn').forEach(x=>x.classList.toggle('active',x===b));renderBusinesses();});
 $('businessGrid').addEventListener('click',e=>{const sell=e.target.closest('[data-sell]');if(sell){if(confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:sell.dataset.sell}),'Объект продан!');return;}const b=e.target.closest('[data-asset]');if(b)action(()=>api('/game/buy-asset',{assetId:b.dataset.asset}),'Поздравляем с покупкой!');});
@@ -469,6 +469,8 @@ async function renderLeaderboard(type=leaderboardType){
 function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 document.querySelectorAll('[data-leader-tab]').forEach(b=>b.addEventListener('click',()=>renderLeaderboard(b.dataset.leaderTab)));
 document.querySelector('[data-page="leaders"]').addEventListener('click',()=>renderLeaderboard(leaderboardType));
+// Пока вкладка лидеров открыта, запрашиваем свежий рейтинг каждый час.
+setInterval(()=>{if(document.getElementById('leaders')?.classList.contains('active'))renderLeaderboard(leaderboardType);},60*60*1000);
 
 // Мягко падающие золотые звёзды по краям фонового биткоина.
 (function makeGoldStars(){const layer=$('goldStars');if(!layer)return;for(let i=0;i<24;i++){const star=document.createElement('i');star.className='gold-star';star.textContent='✦';star.style.left=(2+Math.random()*96)+'%';star.style.animationDuration=(9+Math.random()*15)+'s';star.style.animationDelay=(-Math.random()*20)+'s';star.style.fontSize=(8+Math.random()*15)+'px';star.style.opacity=(.12+Math.random()*.3).toFixed(2);layer.appendChild(star);}})();
