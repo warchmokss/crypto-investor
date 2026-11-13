@@ -331,7 +331,7 @@ app.post('/api/telegram/webhook', async (req,res) => {
       return;
     }
     if (/^\/help(?:\s|$)/i.test(text)) {
-      await sendBotMessage(chatId, 'Команды администратора:\n/give @username сумма — начислить игровые рубли\n/give Telegram_ID сумма — начислить по ID\n/balance @username или /balance Telegram_ID — посмотреть баланс');
+      await sendBotMessage(chatId, 'Команды администратора:\n/give @username сумма — начислить игровые рубли\n/give Telegram_ID сумма — начислить по ID\n/balance @username или /balance Telegram_ID — посмотреть баланс\n/resetbalance @username — обнулить баланс\n/ban @username 7d — блокировка на срок (30m, 12h, 7d, 2w)\n/ban @username навсегда — постоянная блокировка\n/unban @username — снять блокировку');
     }
   } catch (error) {
     req.log?.error(error);
