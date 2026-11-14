@@ -276,7 +276,7 @@ app.post('/api/game/tap',auth,async(req,res,next)=>{try{
  const state=await transaction(async c=>{
   const s=await getState(c,req.playerId);
   const oldTaps=Number(s.player.taps||0),oldLevel=levelForTaps(oldTaps).level;
-  const result=await c.query('UPDATE players SET taps=taps+$2,balance=balance+tap_reward*$2*CASE WHEN (((NOW() AT TIME ZONE 'Europe/Moscow')::time >= TIME '22:00') AND ((NOW() AT TIME ZONE 'Europe/Moscow')::time < TIME '23:00')) THEN 2 ELSE 1 END+((FLOOR((taps+$2)::numeric/100)-FLOOR(taps::numeric/100))*500),updated_at=NOW() WHERE telegram_id=$1 RETURNING balance,taps,tap_reward',[req.playerId,count]);
+  const result=await c.query(`UPDATE players SET taps=taps+$2,balance=balance+tap_reward*$2*CASE WHEN (((NOW() AT TIME ZONE 'Europe/Moscow')::time >= TIME '22:00') AND ((NOW() AT TIME ZONE 'Europe/Moscow')::time < TIME '23:00')) THEN 2 ELSE 1 END+((FLOOR((taps+$2)::numeric/100)-FLOOR(taps::numeric/100))*500),updated_at=NOW() WHERE telegram_id=$1 RETURNING balance,taps,tap_reward`,[req.playerId,count]);
   const newTaps=Number(result.rows[0].taps),newLevel=levelForTaps(newTaps).level;
   const levelReward=Math.max(0,newLevel-oldLevel)*25000;
   if(levelReward)await c.query('UPDATE players SET balance=balance+$2 WHERE telegram_id=$1',[req.playerId,levelReward]);
