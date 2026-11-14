@@ -192,3 +192,33 @@ body:before{content:"₿";position:fixed;z-index:-1;left:50%;top:48%;transform:t
 .leader-empty{text-align:center;padding:24px;border:1px dashed #ffffff30;border-radius:13px}
 .leader-note{text-align:center;margin-top:18px;font-size:12px}
 @media(max-width:480px){.leader-row{grid-template-columns:34px minmax(0,1fr);gap:9px;padding:12px}.leader-rank{width:30px;height:30px}.leader-value{grid-column:2;text-align:left}}
+
+
+/* CRYPTO INVESTOR — gold mobile navigation refresh */
+:root{color-scheme:dark;--gold:#f5bd32;--gold-bright:#ffd45a;--gold-soft:#9b6a13}
+body{background:radial-gradient(ellipse at 50% 0%,#49300b 0%,#171108 38%,#050505 82%);padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+.logo span,h1 span,.eyebrow{color:var(--gold-bright)}
+.topbar{position:relative;display:block;padding:15px max(5vw,20px);background:#090909e8;border-bottom:1px solid #e9ad3430}
+.topbar nav{position:fixed;z-index:50;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:space-around;align-items:center;gap:3px;padding:9px 6px;border:1px solid #ffffff18;border-radius:24px;background:rgba(17,17,17,.94);box-shadow:0 8px 35px #000b;backdrop-filter:blur(18px)}
+.nav-btn{display:flex;flex:1;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 3px;border:0;border-radius:17px;color:#a9a9a9;font-size:12px;font-weight:700;white-space:nowrap}
+.nav-icon{font-size:22px;line-height:1.1;color:inherit}
+.nav-btn.active,.nav-btn:hover{background:linear-gradient(135deg,#ffd34c,#e99a08);color:#171006;border:0;box-shadow:0 4px 18px #f2b51b55}
+.admin-nav-btn{position:absolute;right:0;bottom:100%;background:#171717}
+.more-links{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:16px auto}
+.more-links .nav-btn{flex:0 1 auto;display:inline-flex;flex-direction:row;background:#211a0c;border:1px solid #bd841e55;color:#f5cf70;padding:11px 14px}
+.balance-card,.info-card,.donate-card{background:linear-gradient(145deg,#29200e,#11100c);border-color:#f0bd4538;box-shadow:0 16px 45px #0008}
+.balance{font-size:clamp(34px,7vw,52px)}
+.tap-button{border-color:#ffd34c;background:radial-gradient(circle at 35% 25%,#ffe17a,#bd790c 65%,#5b3500);box-shadow:0 0 0 10px #f5bd3218,0 15px 45px #d18a1c55;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.tap-button:active{transform:none;filter:brightness(1.12)}
+.tap-button:focus{outline:none}
+button{touch-action:manipulation}
+.level-card{margin:0 0 18px;padding:15px 18px;border:1px solid #f5bd3244;border-radius:16px;background:linear-gradient(120deg,#211909,#12100b)}
+.level-card>div:first-child{display:flex;justify-content:space-between;gap:12px;color:#f7d477}
+.level-card span{color:#a99a76;font-size:12px}
+.level-track{height:8px;margin-top:12px;overflow:hidden;border-radius:9px;background:#ffffff18}
+.level-track i{display:block;width:0;height:100%;border-radius:9px;background:linear-gradient(90deg,#c88310,#ffe17a);transition:width .2s}
+.shop-buy,.game-action,.buy-button{background:linear-gradient(135deg,#ffd34c,#e99a08);color:#1b1304}
+.message{color:#f6ce69}
+.save-status{color:#a8956e}
+@media(min-width:760px){.topbar nav{left:50%;right:auto;bottom:16px;transform:translateX(-50%);width:min(620px,calc(100% - 40px))}body{padding-bottom:100px}}
+@media(max-width:480px){main{width:92%;padding:22px 0 36px}.hero{margin:8px 0 22px}.topbar{padding:10px 16px}.logo{font-size:20px}.balance-card{padding:20px}.tap-area{padding:24px 0 18px}}
