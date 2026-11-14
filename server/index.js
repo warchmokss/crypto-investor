@@ -123,6 +123,68 @@ app.get('/api/referral/link',auth,async(req,res,next)=>{try{
  res.json({link,invitedCount:Number(count.rows[0]?.total||0)});
  }catch(e){next(e)}});
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
+
+const MARKET_ASSETS = Object.freeze([
+ {id:'btc',name:'Bitcoin',ticker:'BTC',price:5600000,group:'Криптовалюта'},
+ {id:'eth',name:'Ethereum',ticker:'ETH',price:185000,group:'Криптовалюта'},
+ {id:'ton',name:'Toncoin',ticker:'TON',price:265,group:'Криптовалюта'},
+ {id:'usd',name:'Доллар США',ticker:'USD',price:92,group:'Валюта'},
+ {id:'eur',name:'Евро',ticker:'EUR',price:100,group:'Валюта'},
+ {id:'aapl',name:'Apple',ticker:'AAPL',price:21500,group:'Акции'},
+ {id:'tsla',name:'Tesla',ticker:'TSLA',price:24500,group:'Акции'},
+ {id:'nvda',name:'NVIDIA',ticker:'NVDA',price:13800,group:'Акции'},
+ {id:'msft',name:'Microsoft',ticker:'MSFT',price:41500,group:'Акции'}
+]);
+function getMarketSnapshot(){
+ const bucket=Math.floor(Date.now()/60000);
+ const assets=MARKET_ASSETS.map((asset,index)=>{
+  const wave=Math.sin(bucket/5+index*1.7)*0.018+Math.sin(bucket/13+index)*0.009;
+  return {...asset,price:Math.max(1,Math.round(asset.price*(1+wave)))};
+ });
+ return {assets,updatedAt:new Date().toISOString()};
+}
+app.get('/api/market/state',auth,async(req,res,next)=>{try{
+ const result=await transaction(async c=>{
+  const state=await getState(c,req.playerId);
+  const holdings=await c.query('SELECT asset_id,quantity FROM player_market_holdings WHERE telegram_id=$1',[req.playerId]);
+  return {state,portfolio:Object.fromEntries(holdings.rows.map(row=>[row.asset_id,Number(row.quantity)]))};
+ });
+ res.json({market:{...getMarketSnapshot(),portfolio:result.portfolio},state:result.state});
+}catch(e){next(e)}});
+app.post('/api/market/trade',auth,async(req,res,next)=>{try{
+ const asset=MARKET_ASSETS.find(item=>item.id===req.body?.assetId);
+ const side=req.body?.side;
+ const quantity=Number(req.body?.quantity);
+ if(!asset)throw Object.assign(new Error('Неизвестный биржевой актив.'),{status:400});
+ if(!['buy','sell'].includes(side))throw Object.assign(new Error('Выбери покупку или продажу.'),{status:400});
+ if(!Number.isFinite(quantity)||quantity<=0||quantity>100000000||Math.round(quantity*10000)!==quantity*10000)throw Object.assign(new Error('Количество должно быть положительным, максимум 4 знака после запятой.'),{status:400});
+ const snapshot=getMarketSnapshot();
+ const quote=snapshot.assets.find(item=>item.id===asset.id);
+ const total=Math.round(quote.price*quantity);
+ if(!Number.isSafeInteger(total)||total<1)throw Object.assign(new Error('Слишком маленькая сумма сделки.'),{status:400});
+ const result=await transaction(async c=>{
+  await getState(c,req.playerId,false);
+  if(side==='buy'){
+   const debit=await c.query('UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1 AND balance >= $2 RETURNING balance',[req.playerId,total]);
+   if(!debit.rowCount)throw Object.assign(new Error('Недостаточно игровых рублей для покупки.'),{status:400});
+   await c.query('INSERT INTO player_market_holdings(telegram_id,asset_id,quantity) VALUES($1,$2,$3) ON CONFLICT(telegram_id,asset_id) DO UPDATE SET quantity=player_market_holdings.quantity+EXCLUDED.quantity,updated_at=NOW()',[req.playerId,asset.id,quantity]);
+  }else{
+   const holding=await c.query('SELECT quantity FROM player_market_holdings WHERE telegram_id=$1 AND asset_id=$2 FOR UPDATE',[req.playerId,asset.id]);
+   if(!holding.rowCount||Number(holding.rows[0].quantity)+1e-8<quantity)throw Object.assign(new Error('В портфеле недостаточно этого актива.'),{status:400});
+   const remaining=Number(holding.rows[0].quantity)-quantity;
+   if(remaining<1e-8)await c.query('DELETE FROM player_market_holdings WHERE telegram_id=$1 AND asset_id=$2',[req.playerId,asset.id]);
+   else await c.query('UPDATE player_market_holdings SET quantity=$3,updated_at=NOW() WHERE telegram_id=$1 AND asset_id=$2',[req.playerId,asset.id,remaining]);
+   await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,total]);
+  }
+  const [state,holdings]=await Promise.all([
+   getState(c,req.playerId,false),
+   c.query('SELECT asset_id,quantity FROM player_market_holdings WHERE telegram_id=$1',[req.playerId])
+  ]);
+  return {state,portfolio:Object.fromEntries(holdings.rows.map(row=>[row.asset_id,Number(row.quantity)]))};
+ });
+ res.json({state:result.state,market:{...snapshot,portfolio:result.portfolio},trade:{assetId:asset.id,side,quantity,price:quote.price,total}});
+}catch(e){next(e)}});
+
 const CASE_ITEMS = Object.freeze([
  {id:'neon_coin',label:'Неоновая монета',sellPrice:250000},
  {id:'pixel_crown',label:'Пиксельная корона',sellPrice:1800000},
