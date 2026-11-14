@@ -695,7 +695,7 @@ async function marketTrade(side){
  const status=$('marketStatus'),a=MARKET_ASSETS.find(x=>x.id===$('marketAsset').value),qty=Number($('marketQuantity').value);
  if(!a||!Number.isFinite(qty)||qty<=0||qty>100000000){status.textContent='Укажи корректное количество.';return;}
  if(demoMode){
-  const price=marketPrices[a.id]||a.price,total=side==='buy'?Math.ceil(price*qty):Math.floor(price*qty),owned=Number(marketPortfolio[a.id]||0);
+  const price=marketPrices[a.id]||a.price,total=side==='buy'?Math.ceil(price*qty):Math.floor(price*qty),savedHolding=marketPortfolio[a.id],owned=savedHolding&&typeof savedHolding==='object'?Number(savedHolding.quantity)||0:Number(savedHolding)||0;
   if(side==='buy'){
    if(total>game.player.balance){status.textContent='Недостаточно игровых рублей для покупки.';return;}
    game.player.balance-=total;const prior=marketPortfolio[a.id]&&typeof marketPortfolio[a.id]==='object'?marketPortfolio[a.id]:{quantity:owned,averageBuyPrice:0};marketPortfolio[a.id]={quantity:owned+qty,averageBuyPrice:((owned*(prior.averageBuyPrice||0))+(qty*price))/(owned+qty)};status.textContent='Куплено: '+qty+' '+a.ticker+' за '+money(total)+' игровых ₽.';
