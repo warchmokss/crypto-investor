@@ -244,9 +244,9 @@ function normalizeGameState(value){if(!value||typeof value!=='object'||!value.pl
 function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(!saved||!saved.player||typeof saved.player!=='object')return emptyGame();const valid=normalizeGameState(saved);if(!valid.purchasedUpgrades.length&&Number(valid.player.tapReward)===50){valid.player.tapReward=300;localStorage.setItem(DEMO_KEY,JSON.stringify(valid));}return valid;}catch{return emptyGame();}}
 function levelForTaps(taps){
   const safeTaps=Math.max(0,Math.floor(Number(taps)||0));
-  const level=Math.min(999,Math.floor(safeTaps/50)+1);
-  const total=(level-1)*50;
-  return {level,progress:Math.max(0,safeTaps-total),needed:50,nextThreshold:level*50};
+  const level=Math.min(999,Math.floor(safeTaps/200)+1);
+  const total=(level-1)*200;
+  return {level,progress:Math.max(0,safeTaps-total),needed:200,nextThreshold:level*200};
 }
 function demoApi(path,body={}){
   if(path==='/game/state')return game;
@@ -322,8 +322,8 @@ function updateDisplay(){
   const taps=Number(p.taps||0),levelInfo=levelForTaps(taps),level=levelInfo.level,progress=levelInfo.progress;
   const levelName=$('levelName'),levelText=$('levelProgressText'),levelBar=$('levelProgress');
   if(levelName)levelName.textContent='Уровень '+level;
-  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':money(progress)+' / 50 этапов';
-  if(levelBar)levelBar.style.width=(level>=999?100:Math.min(100,(progress/50)*100))+'%';
+  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':money(progress)+' / 200 тапов';
+  if(levelBar)levelBar.style.width=(level>=999?100:Math.min(100,(progress/200)*100))+'%';
   $('upgradeBalance').textContent=money(p.balance)+' ₽';$('businessBalance').textContent=money(p.balance)+' ₽';$('passiveIncome').textContent=money(game.passiveIncome)+' ₽/мин';
   $('tapButton').querySelector('small').textContent=`+${money(p.tapReward)} ₽ за нажатие`;
   $('tapButton').setAttribute('aria-label',`Получить ${p.tapReward} рублей`);
