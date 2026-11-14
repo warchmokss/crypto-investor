@@ -417,6 +417,19 @@ async function start(){
     return;
   }
   demoMode=false;
+  // Отправляем на сервер только диагностические признаки, без initData и личных данных.
+  fetch('/api/telegram/boot-check',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      sdkPresent:true,
+      initDataPresent:!!tg.initData,
+      initDataLength:String(tg.initData||'').length,
+      platform:String(tg.platform||''),
+      version:String(tg.version||'')
+    }),
+    cache:'no-store'
+  }).catch(()=>{});
   stopConnectionTimer();
   connectionStartedAt=Date.now();
   setConnectionStage('Подключаемся к игровому серверу');
