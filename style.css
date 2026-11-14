@@ -222,3 +222,14 @@ button{touch-action:manipulation}
 .save-status{color:#a8956e}
 @media(min-width:760px){.topbar nav{left:50%;right:auto;bottom:16px;transform:translateX(-50%);width:min(620px,calc(100% - 40px))}body{padding-bottom:100px}}
 @media(max-width:480px){main{width:92%;padding:22px 0 36px}.hero{margin:8px 0 22px}.topbar{padding:10px 16px}.logo{font-size:20px}.balance-card{padding:20px}.tap-area{padding:24px 0 18px}}
+
+/* Normalize legacy green accents to the requested gold palette. */
+.item-income,.leader-value,.leader-rank,.leader-name,.leader-row,.crossword-clue,.crossword-clue input,.leaderboard-list .leader-row{border-color:#d6a83b55}
+.leader-row{background:linear-gradient(135deg,#261d0d,#110e08);color:#f5e5bd}
+.leader-rank{background:#4a350e;color:#ffe08a}
+.leader-value{color:#ffd45a}
+.crossword-clue{background:#1c160a;color:#f6e5bc}
+.crossword-clue small{color:#c9a85c}
+.crossword-clue input{background:#100d07;color:#fff;border-color:#9a762b}
+.crossword-clue input.correct-answer{border-color:#e6b83f;background:#3a2b0d}
+.crossword-card .secondary{background:#34260c;color:#ffe4a0}
