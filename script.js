@@ -5,11 +5,11 @@ const UPGRADES = [
 ];
 const ASSETS = {
   cars: [
-    {id:'car1',name:"Lada Granta",icon:"\ud83d\ude97",cost:1000000,income:2500,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car2',name:"Lada Vesta",icon:"\ud83d\ude97",cost:1600000,income:4000,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car3',name:"Kia Rio",icon:"\ud83d\ude97",cost:1800000,income:4500,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car4',name:"Hyundai Solaris",icon:"\ud83d\ude97",cost:1700000,income:4300,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car5',name:"Toyota Camry",icon:"\ud83d\ude97",cost:4500000,income:11000,description:"Автомобиль для личного пользования и получения игрового дохода."},
+    {id:'car1',name:"Lada Granta",icon:"\ud83d\ude97",cost:1000000,income:2500,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
+    {id:'car2',name:"Lada Vesta",icon:"\ud83d\ude97",cost:1600000,income:4000,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
+    {id:'car3',name:"Kia Rio",icon:"\ud83d\ude97",cost:1800000,income:4500,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
+    {id:'car4',name:"Hyundai Solaris",icon:"\ud83d\ude97",cost:1700000,income:4300,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
+    {id:'car5',name:"Toyota Camry",icon:"\ud83d\ude97",cost:4500000,income:11000,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
     {id:'car6',name:"BMW 3 Series",icon:"\ud83d\ude97",cost:6000000,income:15000,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car7',name:"Mercedes-Benz E-Class",icon:"\ud83d\ude97",cost:8000000,income:20000,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car8',name:"BMW X5",icon:"\ud83d\ude97",cost:12000000,income:30000,description:"Автомобиль для личного пользования и получения игрового дохода."},
@@ -54,7 +54,10 @@ const ASSETS = {
     {id:'car47',name:"Lexus LX",icon:"\ud83d\ude97",cost:242630616,income:606577,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car48',name:"Range Rover Sport",icon:"\ud83d\ude97",cost:281451515,income:703629,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car49',name:"Tesla Model 3",icon:"\ud83d\ude97",cost:326483757,income:816209,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car50',name:"Tesla Model S",icon:"\ud83d\ude97",cost:378721158,income:946803,description:"Автомобиль для личного пользования и получения игрового дохода."}
+    {id:'car50',name:"Tesla Model S",icon:"\ud83d\ude97",cost:378721158,income:946803,description:"Автомобиль для личного пользования и получения игрового дохода."},
+    {id:'car51',name:"Bugatti Chiron",icon:"🏎️",image:"https://autorai.nl/wp-content/uploads/2018/03/2018-Bugatti-Chiron-Sport-11-1600x1153.jpg",cost:400000000,income:10000000,description:"Гиперкар Bugatti Chiron — вершина автомобильной коллекции."},
+    {id:'car52',name:"Ducati Panigale V4",icon:"🏍️",image:"https://wallpapercrafter.com/desktop1/632630-Motorcycles-Ducati-Ducati-Panigale-V4-Motorcycle.jpg",cost:36000000,income:900000,description:"Спортивный мотоцикл Ducati Panigale V4."},
+    {id:'car53',name:"Lamborghini Aventador",icon:"🏎️",image:"https://images.collectingcars.com/017152/LAMBO-145.jpg?auto=format%2Ccompress&cs=srgb&fit=clip&q=85&w=2000",cost:250000000,income:6250000,description:"Оранжевый суперкар Lamborghini Aventador."}
   ],
   businesses: [
     {id:'biz1',name:"Кофейня",icon:"\ud83c\udfe2",cost:3000000,income:9000,description:"Прибыльное предприятие с регулярным игровым доходом."},
@@ -296,10 +299,10 @@ function renderUpgrades(){
 function renderPropertyUpgrades(){
   const owned=allAssets.filter(a=>game.owned.includes(a.id)); const grid=$('propertyUpgradeGrid');
   if(!owned.length){grid.innerHTML='<p class="muted">Сначала приобрети имущество во вкладке «Бизнес» — оно появится здесь.</p>';return;}
-  grid.innerHTML=owned.map(a=>{const level=game.propertyLevels[a.id]||0,fee=Math.max(1000,Math.floor(a.cost*.2)),maxed=level>=5;return `<article class="shop-card"><div class="shop-icon">${a.icon}</div><h3>${a.name}</h3><p>Уровень улучшения: <b>${level}/5</b>. Каждый уровень увеличивает доход на 25%.</p><div class="item-income">Текущий доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-buy" data-property-upgrade="${a.id}" ${maxed||game.player.balance<fee?'disabled':''}>${maxed?'Максимальный уровень ✓':`Улучшить · ${money(fee)} ₽`}</button></article>`}).join('');
+  grid.innerHTML=owned.map(a=>{const level=game.propertyLevels[a.id]||0,fee=Math.max(1000,Math.floor(a.cost*.2)),maxed=level>=5;return `<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>Уровень улучшения: <b>${level}/5</b>. Каждый уровень увеличивает доход на 25%.</p><div class="item-income">Текущий доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-buy" data-property-upgrade="${a.id}" ${maxed||game.player.balance<fee?'disabled':''}>${maxed?'Максимальный уровень ✓':`Улучшить · ${money(fee)} ₽`}</button></article>`}).join('');
 }
 function renderBusinesses(){
-  const items=ASSETS[activeCategory];$('businessGrid').innerHTML=items.map(a=>{const bought=game.owned.includes(a.id);const resale=Math.floor(a.cost*.7);return `<article class="shop-card"><div class="shop-icon">${a.icon}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Цена: ${money(a.cost)} ₽ · Доход: +${money(a.income)} ₽/мин</div><div class="trade-actions"><button class="shop-buy" data-asset="${a.id}" ${bought||game.player.balance<a.cost?'disabled':''}>${bought?'Куплено ✓':`Купить · ${money(a.cost)} ₽`}</button>${bought?`<button class="shop-sell" data-sell="${a.id}">Продать · ${money(resale)} ₽</button>`:''}</div></article>`}).join('');
+  const items=ASSETS[activeCategory].filter(a=>a.visible!==false);$('businessGrid').innerHTML=items.map(a=>{const bought=game.owned.includes(a.id);const resale=Math.floor(a.cost*.7);return `<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Цена: ${money(a.cost)} ₽ · Доход: +${money(a.income)} ₽/мин</div><div class="trade-actions"><button class="shop-buy" data-asset="${a.id}" ${bought||game.player.balance<a.cost?'disabled':''}>${bought?'Куплено ✓':`Купить · ${money(a.cost)} ₽`}</button>${bought?`<button class="shop-sell" data-sell="${a.id}">Продать · ${money(resale)} ₽</button>`:''}</div></article>`}).join('');
   renderGarage(); renderPropertyUpgrades();
 }
 function renderGarage(){
@@ -307,7 +310,7 @@ function renderGarage(){
   const labels={cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
   categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});
   const owned=ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
-  $('garageGrid').innerHTML=owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-icon">${a.icon}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
+  $('garageGrid').innerHTML=owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
 function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();}
