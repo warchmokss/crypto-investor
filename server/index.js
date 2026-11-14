@@ -149,13 +149,21 @@ const MARKET_ASSETS = Object.freeze([
 ]);
 function getMarketSnapshot(){
  const bucket=Math.floor(Date.now()/60000);
+ const priceAt=(asset,index,minute)=>{
+  const wave=Math.sin(minute/5+index*1.7)*0.018+Math.sin(minute/13+index)*0.009;
+  return Math.max(1,Math.round(asset.price*(1+wave)));
+ };
  const assets=MARKET_ASSETS.map((asset,index)=>{
-  const wave=Math.sin(bucket/5+index*1.7)*0.018+Math.sin(bucket/13+index)*0.009;
-  return {...asset,price:Math.max(1,Math.round(asset.price*(1+wave)))};
+  const price=priceAt(asset,index,bucket);
+  const previousPrice=priceAt(asset,index,bucket-1);
+  const changeValue=price-previousPrice;
+  const changePercent=previousPrice>0?(changeValue/previousPrice)*100:0;
+  return {...asset,price,previousPrice,changeValue,changePercent};
  });
  return {assets,updatedAt:new Date().toISOString()};
 }
 app.get('/api/market/state',auth,async(req,res,next)=>{try{
+ await bansReady;
  const result=await transaction(async c=>{
   const state=await getState(c,req.playerId);
   const holdings=await c.query('SELECT asset_id,quantity FROM player_market_holdings WHERE telegram_id=$1',[req.playerId]);
@@ -164,6 +172,7 @@ app.get('/api/market/state',auth,async(req,res,next)=>{try{
  res.json({market:{...getMarketSnapshot(),portfolio:result.portfolio},state:result.state});
 }catch(e){next(e)}});
 app.post('/api/market/trade',auth,async(req,res,next)=>{try{
+ await bansReady;
  const asset=MARKET_ASSETS.find(item=>item.id===req.body?.assetId);
  const side=req.body?.side;
  const quantity=Number(req.body?.quantity);
