@@ -17,7 +17,7 @@ import { UPGRADES, ASSETS, ALL_ASSETS, getIncome } from './catalog.js';
 const { Pool } = pg;
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PG_POOL_MAX || 20), idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
-const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS player_market_holdings (telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, quantity NUMERIC(24,8) NOT NULL CHECK(quantity > 0), average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,asset_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_trades (id BIGSERIAL PRIMARY KEY, telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, side TEXT NOT NULL CHECK(side IN ('buy','sell')), quantity NUMERIC(24,8) NOT NULL, price NUMERIC(24,8) NOT NULL, total BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query('ALTER TABLE player_market_holdings ADD COLUMN IF NOT EXISTS average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0'),pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`),pool.query(`CREATE TABLE IF NOT EXISTS player_case_tokens (telegram_id TEXT PRIMARY KEY, tokens INTEGER NOT NULL DEFAULT 0 CHECK(tokens >= 0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_starter_claims (telegram_id TEXT PRIMARY KEY, claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_unique_items (telegram_id TEXT NOT NULL, item_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity > 0), PRIMARY KEY(telegram_id,item_id))`) ]);
+const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS global_game_events (event_key TEXT PRIMARY KEY, tap_multiplier INTEGER NOT NULL DEFAULT 1, starts_at TIMESTAMPTZ NOT NULL, expires_at TIMESTAMPTZ NOT NULL)`),pool.query(`INSERT INTO global_game_events(event_key,tap_multiplier,starts_at,expires_at) VALUES('global_tap_x2',2,NOW(),NOW()+INTERVAL '1 hour') ON CONFLICT(event_key) DO UPDATE SET tap_multiplier=2,starts_at=NOW(),expires_at=NOW()+INTERVAL '1 hour'`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_holdings (telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, quantity NUMERIC(24,8) NOT NULL CHECK(quantity > 0), average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,asset_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_trades (id BIGSERIAL PRIMARY KEY, telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, side TEXT NOT NULL CHECK(side IN ('buy','sell')), quantity NUMERIC(24,8) NOT NULL, price NUMERIC(24,8) NOT NULL, total BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query('ALTER TABLE player_market_holdings ADD COLUMN IF NOT EXISTS average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0'),pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`),pool.query(`CREATE TABLE IF NOT EXISTS player_case_tokens (telegram_id TEXT PRIMARY KEY, tokens INTEGER NOT NULL DEFAULT 0 CHECK(tokens >= 0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_starter_claims (telegram_id TEXT PRIMARY KEY, claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_unique_items (telegram_id TEXT NOT NULL, item_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity > 0), PRIMARY KEY(telegram_id,item_id))`) ]);
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 2, enableReadyCheck: true }) : null;
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -71,11 +71,12 @@ async function transaction(fn) { const c=await pool.connect(); try { await c.que
 async function getState(client,id,applyIncome=true) {
   const p=(await client.query('SELECT * FROM players WHERE telegram_id=$1 FOR UPDATE',[id])).rows[0];
   if (!p) throw Object.assign(new Error('Игрок не найден'),{status:404});
-  const [up,assets,caseRow,uniqueRows]=await Promise.all([
+  const [up,assets,caseRow,uniqueRows,boostRow]=await Promise.all([
     client.query('SELECT upgrade_id FROM player_upgrades WHERE telegram_id=$1',[id]),
     client.query('SELECT asset_id,level FROM player_assets WHERE telegram_id=$1',[id]),
     client.query('SELECT tokens FROM player_case_tokens WHERE telegram_id=$1',[id]),
-    client.query('SELECT item_id,quantity FROM player_unique_items WHERE telegram_id=$1',[id])
+    client.query('SELECT item_id,quantity FROM player_unique_items WHERE telegram_id=$1',[id]),
+    client.query("SELECT tap_multiplier,expires_at,(starts_at<=NOW() AND expires_at>NOW()) AS active FROM global_game_events WHERE event_key='global_tap_x2'")
   ]);
   const levels=Object.fromEntries(assets.rows.map(x=>[x.asset_id,x.level]));
   const income=assets.rows.reduce((sum,x)=>{const a=ALL_ASSETS.find(z=>z.id===x.asset_id);return sum+(a?getIncome(a,x.level):0)},0);
@@ -86,7 +87,7 @@ async function getState(client,id,applyIncome=true) {
     else await client.query('UPDATE players SET last_income_at=NOW() WHERE telegram_id=$1',[id]);
     p.balance=Number(p.balance)+earned;
   }
-  return { player:{telegramId:String(p.telegram_id),username:p.username,firstName:p.first_name,balance:Number(p.balance),taps:Number(p.taps),tapReward:p.tap_reward}, owned:assets.rows.map(x=>x.asset_id), purchasedUpgrades:up.rows.map(x=>x.upgrade_id), propertyLevels:levels, passiveIncome:income, caseTokens:Number(caseRow.rows[0]?.tokens||0), uniqueItems:Object.fromEntries(uniqueRows.rows.map(x=>[x.item_id,Number(x.quantity)])) };
+  return { player:{telegramId:String(p.telegram_id),username:p.username,firstName:p.first_name,balance:Number(p.balance),taps:Number(p.taps),tapReward:p.tap_reward}, owned:assets.rows.map(x=>x.asset_id), purchasedUpgrades:up.rows.map(x=>x.upgrade_id), propertyLevels:levels, passiveIncome:income, caseTokens:Number(caseRow.rows[0]?.tokens||0), uniqueItems:Object.fromEntries(uniqueRows.rows.map(x=>[x.item_id,Number(x.quantity)])), globalTapBoost:boostRow.rows[0]?{active:boostRow.rows[0].active===true,multiplier:Number(boostRow.rows[0].tap_multiplier),expiresAt:boostRow.rows[0].expires_at}:{active:false,multiplier:1,expiresAt:null} };
 }
 app.post('/api/telegram/boot-check', (req,res) => {
   const report = {
@@ -275,7 +276,7 @@ app.post('/api/game/tap',auth,async(req,res,next)=>{try{
  const state=await transaction(async c=>{
   const s=await getState(c,req.playerId);
   const oldTaps=Number(s.player.taps||0),oldLevel=levelForTaps(oldTaps).level;
-  const result=await c.query('UPDATE players SET taps=taps+$2,balance=balance+tap_reward*$2+((FLOOR((taps+$2)::numeric/100)-FLOOR(taps::numeric/100))*500),updated_at=NOW() WHERE telegram_id=$1 RETURNING balance,taps,tap_reward',[req.playerId,count]);
+  const result=await c.query('UPDATE players SET taps=taps+$2,balance=balance+tap_reward*$2*CASE WHEN EXISTS(SELECT 1 FROM global_game_events WHERE event_key='global_tap_x2' AND starts_at<=NOW() AND expires_at>NOW()) THEN 2 ELSE 1 END+((FLOOR((taps+$2)::numeric/100)-FLOOR(taps::numeric/100))*500),updated_at=NOW() WHERE telegram_id=$1 RETURNING balance,taps,tap_reward',[req.playerId,count]);
   const newTaps=Number(result.rows[0].taps),newLevel=levelForTaps(newTaps).level;
   const levelReward=Math.max(0,newLevel-oldLevel)*25000;
   if(levelReward)await c.query('UPDATE players SET balance=balance+$2 WHERE telegram_id=$1',[req.playerId,levelReward]);
