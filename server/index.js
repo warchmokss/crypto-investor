@@ -124,14 +124,14 @@ app.get('/api/referral/link',auth,async(req,res,next)=>{try{
  }catch(e){next(e)}});
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
 const CASE_ITEMS = Object.freeze([
- {id:'neon_coin',label:'Неоновая монета'},
- {id:'pixel_crown',label:'Пиксельная корона'},
- {id:'blue_flame',label:'Синее пламя'},
- {id:'cyber_glasses',label:'Кибер-очки'},
- {id:'golden_badge',label:'Золотой значок'},
- {id:'holo_cube',label:'Голографический куб'},
- {id:'star_wings',label:'Звёздные крылья'},
- {id:'crystal_fox',label:'Кристальный лис'}
+ {id:'neon_coin',label:'Неоновая монета',sellPrice:250000},
+ {id:'pixel_crown',label:'Пиксельная корона',sellPrice:1800000},
+ {id:'blue_flame',label:'Синее пламя',sellPrice:950000},
+ {id:'cyber_glasses',label:'Кибер-очки',sellPrice:2400000},
+ {id:'golden_badge',label:'Золотой значок',sellPrice:1250000},
+ {id:'holo_cube',label:'Голографический куб',sellPrice:4600000},
+ {id:'star_wings',label:'Звёздные крылья',sellPrice:7800000},
+ {id:'crystal_fox',label:'Кристальный лис',sellPrice:9500000}
 ]);
 app.post('/api/game/claim-starter-pack',auth,async(req,res,next)=>{try{
  const state=await transaction(async c=>{
@@ -157,6 +157,22 @@ app.post('/api/game/open-case',auth,async(req,res,next)=>{try{
   return {state:await getState(c,req.playerId,false),reward:{itemId:reward.id,label:reward.label}};
  });
  res.json(result);
+ }catch(e){next(e)}});
+
+
+app.post('/api/game/sell-unique-item',auth,async(req,res,next)=>{try{
+ const item=CASE_ITEMS.find(x=>x.id===req.body?.itemId);
+ if(!item)throw Object.assign(new Error('Неизвестный уникальный предмет'),{status:400});
+ const state=await transaction(async c=>{
+  const owned=await c.query('SELECT quantity FROM player_unique_items WHERE telegram_id=$1 AND item_id=$2 FOR UPDATE',[req.playerId,item.id]);
+  if(!owned.rowCount||Number(owned.rows[0].quantity)<1)throw Object.assign(new Error('У тебя нет этого предмета'),{status:400});
+  if(Number(item.sellPrice)>10000000)throw Object.assign(new Error('Цена продажи превышает лимит'),{status:400});
+  if(Number(owned.rows[0].quantity)===1)await c.query('DELETE FROM player_unique_items WHERE telegram_id=$1 AND item_id=$2',[req.playerId,item.id]);
+  else await c.query('UPDATE player_unique_items SET quantity=quantity-1 WHERE telegram_id=$1 AND item_id=$2',[req.playerId,item.id]);
+  await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,item.sellPrice]);
+  return getState(c,req.playerId,false);
+ });
+ res.json(state);
  }catch(e){next(e)}});
 
 function levelForTaps(taps){
