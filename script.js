@@ -512,6 +512,21 @@ document.querySelectorAll('[data-cross-level]').forEach(b=>b.addEventListener('c
 $('crosswordCheck').addEventListener('click',async()=>{if(crosswordSolved)return;const wait=Math.max(0,Number(localStorage.getItem(crosswordKey)||0)-Date.now());if(wait>0){$('crosswordResult').textContent=`Награда уже получена. Подожди ещё ${Math.ceil(wait/60000)} мин.`;return;}let correct=0;crosswordPuzzle.forEach((x,i)=>{const input=$(`[data-cross-answer="${i}"]`);const answer=input.value.toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[^А-Я]/g,'');if(answer===x.w.replace(/Ё/g,'Е')){correct++;input.classList.add('correct-answer');input.disabled=true;}else{input.classList.add('wrong-answer');}});if(correct===crosswordPuzzle.length){try{if(demoMode){game.player.balance+=5000;saveDemo();localStorage.setItem(crosswordKey,String(Date.now()+CROSSWORD_COOLDOWN));}else{game=await api('/game/crossword-reward',{level:crosswordLevel,answers:crosswordPuzzle.map(x=>x.w)});}crosswordSolved=true;renderAll();$('crosswordBalance').textContent=money(game.player.balance)+' ₽';$('crosswordResult').textContent='🎉 Отлично! Все ответы верны. Начислено 5 000 ₽.';$('crosswordCheck').disabled=true;}catch(err){$('crosswordResult').textContent=err.message||'Не удалось начислить награду.';$('crosswordCheck').disabled=true;}}else $('crosswordResult').textContent=`Правильно: ${correct} из ${crosswordPuzzle.length}. Исправь выделенные ответы и попробуй ещё раз.`;});
 $('crosswordNew').addEventListener('click',()=>newCrossword());
 $('transferSend').addEventListener('click',async()=>{const username=$('transferUsername').value.trim().replace(/^@/,'');const amount=Math.floor(Number($('transferAmount').value));const status=$('transferStatus');if(!/^[A-Za-z0-9_]{5,32}$/.test(username)){status.textContent='Введи корректный Telegram username (5–32 символа).';return;}if(!Number.isSafeInteger(amount)||amount<1){status.textContent='Укажи целую сумму больше нуля.';return;}if(!game||amount>game.player.balance){status.textContent='Недостаточно игровых рублей.';return;}if(demoMode){status.textContent='Переводы между пользователями доступны только в опубликованной Telegram Mini App с подключённым сервером. В локальном предпросмотре получателя проверить нельзя.';return;}const btn=$('transferSend');btn.disabled=true;status.textContent='Выполняется перевод…';try{const result=await api('/game/transfer',{username,amount});game=result.state;renderAll();$('transferBalance').textContent=money(game.player.balance)+' ₽';status.textContent=`Перевод ${money(amount)} ₽ пользователю @${result.recipient} выполнен.`;$('transferAmount').value='';}catch(e){status.textContent=e.message||'Не удалось выполнить перевод.';}finally{btn.disabled=false;}});
+ $('referralCopy').addEventListener('click',async()=>{
+  const button=$('referralCopy'),status=$('referralStatus');
+  if(demoMode){status.textContent='Пригласительная ссылка доступна после входа через Telegram.';return;}
+  button.disabled=true;status.textContent='Создаём твою ссылку…';
+  try{
+   const data=await api('/referral/link');
+   const field=document.createElement('textarea');field.value=data.link;field.setAttribute('readonly','');field.style.position='fixed';field.style.opacity='0';document.body.appendChild(field);field.select();
+   let copied=false;try{await navigator.clipboard.writeText(data.link);copied=true;}catch{}
+   if(!copied){try{copied=document.execCommand('copy');}catch{}}
+   field.remove();
+   $('referralCount').textContent='Приглашённых друзей: '+Number(data.invitedCount||0);
+   status.textContent=copied?'Ссылка скопирована! Отправь её другу в Telegram.':'Твоя ссылка: '+data.link;
+  }catch(e){status.textContent=e.message||'Не удалось создать ссылку.';}
+  finally{button.disabled=false;}
+ });
 document.querySelector('[data-page="crosswords"]').addEventListener('click',()=>{$('crosswordBalance').textContent=money(game?.player?.balance||0)+' ₽';if(!crosswordPuzzle.length)newCrossword();});
 document.querySelector('[data-page="transfers"]').addEventListener('click',()=>{$('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';});
 
