@@ -1,7 +1,7 @@
 const UPGRADES = [
-  { id:'tap2', name:'Усиленный тап', icon:'👆', description:'Получай +100 ₽ за каждое нажатие.', cost:50000, tap:150 },
-  { id:'tap3', name:'Профессиональный тап', icon:'⚡', description:'Получай +250 ₽ за каждое нажатие.', cost:250000, tap:300 },
-  { id:'tap4', name:'Золотой тап', icon:'🌟', description:'Получай +500 ₽ за каждое нажатие.', cost:1000000, tap:500 }
+  { id:'tap2', name:'Усиленный тап', icon:'👆', description:'Получай 350 ₽ за каждое нажатие.', cost:100000, tap:350 },
+  { id:'tap3', name:'Профессиональный тап', icon:'⚡', description:'Получай 450 ₽ за каждое нажатие.', cost:500000, tap:450 },
+  { id:'tap4', name:'Универсальный тап', icon:'✨', description:'Получай 600 ₽ за каждое нажатие.', cost:500000, tap:600 }
 ];
 const ASSETS = {
   cars: [
@@ -232,7 +232,7 @@ function demoApi(path,body={}){
 const $=id=>document.getElementById(id);
 const money=n=>Math.floor(n).toLocaleString('ru-RU');
 const allAssets=Object.values(ASSETS).flat();
-const getAssetIncome=a=>Math.floor(a.income*(1+(game?.propertyLevels?.[a.id]||0)*.25));
+const getAssetIncome=a=>Math.floor(a.income*(1+(game?.propertyLevels?.[a.id]||0)*.25)*2.5);
 
 async function api(path,body) {
   if(demoMode)return demoApi(path,body);
