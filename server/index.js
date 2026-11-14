@@ -153,12 +153,12 @@ app.get('/api/leaderboard',auth,async(req,res,next)=>{try{
    if(!totals.has(id)) totals.set(id,{username:row.username,first_name:row.first_name,assetsValue:0});
    if(row.asset_id) totals.get(id).assetsValue+=values.get(row.asset_id)||0;
   }
-  const players=[...totals.values()].sort((a,b)=>b.assetsValue-a.assetsValue)
+  const players=[...totals.values()].filter(x=>x.assetsValue>0).sort((a,b)=>b.assetsValue-a.assetsValue)
    .slice(0,100).map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name||'Игрок',assetsValue:x.assetsValue}));
   return res.json({type:'assets',players});
  }
  const r=await pool.query(`SELECT username,first_name,balance FROM players
-  ORDER BY balance DESC,telegram_id ASC LIMIT 100`);
+  WHERE balance > 0 ORDER BY balance DESC,telegram_id ASC LIMIT 100`);
  res.json({type:'balance',players:r.rows.map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name||'Игрок',balance:Number(x.balance)}))});
 }catch(e){next(e)} });
 
