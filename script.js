@@ -528,7 +528,10 @@ $('transferSend').addEventListener('click',async()=>{const username=$('transferU
   finally{button.disabled=false;}
  });
 document.querySelector('[data-page="crosswords"]').addEventListener('click',()=>{$('crosswordBalance').textContent=money(game?.player?.balance||0)+' ₽';if(!crosswordPuzzle.length)newCrossword();});
-document.querySelector('[data-page="transfers"]').addEventListener('click',()=>{$('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';});
+document.querySelector('[data-page="transfers"]').addEventListener('click',async()=>{
+ if(!demoMode&&token){try{await refresh();const info=await api('/referral/link');$('referralCount').textContent='Приглашённых друзей: '+Number(info.invitedCount||0);}catch{}}
+ $('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';
+});
 
 let leaderboardType='balance';
 async function renderLeaderboard(type=leaderboardType){
