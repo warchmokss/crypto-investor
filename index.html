@@ -9,7 +9,7 @@
   <meta http-equiv="Expires" content="0">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <title>CRYPTO INVESTOR — игровой симулятор капитала</title>
-  <link rel="stylesheet" href="style.css?v=20261114-real-car-photos-2">
+  <link rel="stylesheet" href="style.css?v=20261114-case-demo-1">
 </head>
 <body>
   <header class="topbar">
@@ -18,6 +18,8 @@
       <button class="nav-btn active" data-page="home"><span class="nav-icon">▶</span><span>Играть</span></button>
       <button class="nav-btn" data-page="business"><span class="nav-icon">▣</span><span>Бизнес</span></button>
       <button class="nav-btn" data-page="garage"><span class="nav-icon">⌂</span><span>Гараж</span></button>
+      <button class="nav-btn" data-page="cases"><span class="nav-icon">🎁</span><span>Кейсы</span></button>
+      <button class="nav-btn" data-page="donate"><span class="nav-icon">⭐</span><span>Донат</span></button>
       <button class="nav-btn" data-page="transfers"><span class="nav-icon">♧</span><span>Друзья</span></button>
       <button class="nav-btn" data-page="about"><span class="nav-icon">•••</span><span>Ещё</span></button>
       <button class="nav-btn admin-nav-btn" data-page="admin" id="adminNav" hidden>Админ</button>
@@ -83,6 +85,44 @@
       <p class="muted trade-note">Продажа возвращает 70% первоначальной стоимости. Доход от актива начисляется, пока он у тебя.</p>
     </section>
 
+    <section id="cases" class="page">
+      <div class="hero"><p class="eyebrow">КОЛЛЕКЦИЯ НАГРАД</p><h1>Игровые <span>кейсы</span></h1><p class="muted">Демо-оформление кейса CRYPTO INVESTOR. Здесь можно посмотреть карточки и анимацию без списания баланса и случайной выдачи призов.</p></div>
+      <div class="case-showcase">
+        <div class="case-heading"><div><span class="case-kicker">CASE PREVIEW</span><h2>Крипто-кейс</h2></div><span class="case-cost">5 000 000 ₽ <small>макет цены</small></span></div>
+        <div class="case-reel" id="caseReel" aria-label="Демонстрационная лента предметов">
+          <div class="case-reel-track" id="caseReelTrack">
+            <div class="case-reel-card"><span>₿</span><b>Bitcoin</b><small>Уникальный предмет</small></div>
+            <div class="case-reel-card"><span>₽</span><b>5 000 000 ₽</b><small>Игровая награда</small></div>
+            <div class="case-reel-card"><span>♦</span><b>4 000 000 ₽</b><small>Игровая награда</small></div>
+            <div class="case-reel-card"><span>◆</span><b>3 000 000 ₽</b><small>Игровая награда</small></div>
+            <div class="case-reel-card"><span>◈</span><b>2 000 000 ₽</b><small>Игровая награда</small></div>
+            <div class="case-reel-card"><span>✦</span><b>1 000 000 ₽</b><small>Игровая награда</small></div>
+            <div class="case-reel-card"><span>✧</span><b>500 000 ₽</b><small>Игровая награда</small></div>
+            <div class="case-reel-card"><span>●</span><b>100 000 ₽</b><small>Игровая награда</small></div>
+          </div>
+          <div class="case-reel-marker"></div>
+        </div>
+        <div class="case-actions"><button class="game-action" id="casePreviewButton" type="button">▶ Посмотреть анимацию</button><span class="muted" id="casePreviewStatus" aria-live="polite">Демонстрация интерфейса · баланс не меняется</span></div>
+      </div>
+      <div class="hero case-collection"><p class="eyebrow">КАРТОЧКИ КОЛЛЕКЦИИ</p><h2>Предметы кейса</h2><div class="case-card-grid">
+        <article class="case-prize unique"><span>₿</span><h3>Bitcoin (BTC)</h3><p>Уникальный предмет для гаража</p><small>Уникальный</small></article>
+        <article class="case-prize"><span>₽</span><h3>5 000 000 ₽</h3><p>Игровая награда</p></article>
+        <article class="case-prize"><span>♦</span><h3>4 000 000 ₽</h3><p>Игровая награда</p></article>
+        <article class="case-prize"><span>◆</span><h3>3 000 000 ₽</h3><p>Игровая награда</p></article>
+        <article class="case-prize"><span>◈</span><h3>2 000 000 ₽</h3><p>Игровая награда</p></article>
+        <article class="case-prize"><span>✦</span><h3>1 000 000 ₽</h3><p>Игровая награда</p></article>
+        <article class="case-prize"><span>✧</span><h3>500 000 ₽</h3><p>Игровая награда</p></article>
+        <article class="case-prize"><span>●</span><h3>100 000 ₽</h3><p>Игровая награда</p></article>
+      </div></div>
+    </section>
+    <section id="donate" class="page">
+      <div class="hero"><p class="eyebrow">ПОДДЕРЖКА ПРОЕКТА</p><h1>Донат <span>CRYPTO INVESTOR</span></h1><p class="muted">Демо-витрина фиксированных наборов. Реальная оплата и списание Telegram Stars не подключены.</p></div>
+      <div class="donate-grid">
+        <article class="donate-card"><div class="donate-icon">⭐</div><h2>Стартовый набор</h2><p>Фиксированный бонус для игрового профиля</p><b>Состав набора указан заранее</b><button type="button" class="shop-buy donate-preview" data-donate="starter">Посмотреть набор</button><small class="donate-status" id="donateStarterStatus">Предпросмотр · без оплаты</small></article>
+        <article class="donate-card featured"><div class="donate-icon">💎</div><h2>Премиум-набор</h2><p>Фиксированный косметический набор</p><b>Без случайных наград</b><button type="button" class="shop-buy donate-preview" data-donate="premium">Посмотреть набор</button><small class="donate-status" id="donatePremiumStatus">Предпросмотр · без оплаты</small></article>
+      </div>
+      <p class="muted donate-footnote">Покупки за реальные деньги или Telegram Stars здесь пока не выполняются.</p>
+    </section>
     <section id="garage" class="page">
       <div class="hero"><p class="eyebrow">ТВОЁ ИМУЩЕСТВО</p><h1>Мой <span>гараж</span></h1><p class="muted">Все купленные автомобили, квартиры и объекты бизнеса в одном месте.</p></div>
       <div class="garage-tiles">
@@ -90,6 +130,7 @@
         <button class="garage-tile" data-garage="apartments"><span>🏠</span><b>Недвижимость</b><small id="garageCountApartments">0 объектов</small></button>
         <button class="garage-tile" data-garage="businesses"><span>🏢</span><b>Собственность</b><small id="garageCountBusinesses">0 объектов</small></button>
         <button class="garage-tile" data-garage="stalls"><span>🛍️</span><b>Торговые площадки</b><small id="garageCountStalls">0 объектов</small></button>
+        <button class="garage-tile" data-garage="unique"><span>₿</span><b>Уникальные предметы</b><small id="garageCountUnique">0 предметов</small></button>
       </div>
       <h2 id="garageTitle">🚗 Автомобили</h2><div id="garageGrid" class="shop-grid"></div>
     </section>
@@ -227,6 +268,6 @@
   <div id="fireworks" class="fireworks" aria-hidden="true"></div>
   <div id="bonusPopup" class="bonus-popup" role="status" aria-live="polite"></div>
   <footer>CRYPTO INVESTOR · игровой симулятор капитала</footer>
-  <script src="script.js?v=20261114-real-car-photos-2"></script>
+  <script src="script.js?v=20261114-case-demo-1"></script>
 </body>
 </html>
