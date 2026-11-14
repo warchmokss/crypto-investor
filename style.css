@@ -246,3 +246,11 @@ button{touch-action:manipulation}
 .shop-vehicle img{display:block;width:100%;height:100%;object-fit:cover;object-position:center}
 .shop-card:has(.shop-vehicle){overflow:hidden}
 @media(max-width:520px){.shop-vehicle{height:145px}}
+
+
+/* Реалистичные фото автомобилей в карточках магазина */
+.shop-vehicle{height:176px;border-radius:13px;overflow:hidden;background:#111;margin-bottom:14px;border:1px solid #ffffff1c}
+.shop-vehicle img{width:100%;height:100%;display:block;object-fit:cover;object-position:center;transition:transform .35s ease}
+.shop-card:hover .shop-vehicle img{transform:scale(1.045)}
+.shop-card:has(.shop-vehicle){padding-top:14px}
+@media(max-width:520px){.shop-vehicle{height:155px}}
