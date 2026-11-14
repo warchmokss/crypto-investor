@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS players (
   telegram_id BIGINT PRIMARY KEY,
   username TEXT,
   first_name TEXT NOT NULL DEFAULT 'Игрок',
-  balance BIGINT NOT NULL DEFAULT 0 CHECK (balance >= 0),
+  balance BIGINT NOT NULL DEFAULT 50000 CHECK (balance >= 0),
   taps BIGINT NOT NULL DEFAULT 0 CHECK (taps >= 0),
   tap_reward INTEGER NOT NULL DEFAULT 50,
   last_income_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
