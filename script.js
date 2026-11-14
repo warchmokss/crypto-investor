@@ -587,7 +587,7 @@ async function renderLeaderboard(type=leaderboardType){
  const list=$('leaderboardList');
  const caption=$('leaderCaption');
  const isAssets=leaderboardType==='assets';
- caption.textContent=isAssets?'Топ-100 игроков по стоимости машин, бизнеса и другого имущества':'Топ-100 игроков по размеру игрового баланса';
+ caption.textContent=isAssets?'Топ-100 игроков по стоимости машин, бизнеса и другого имущества':'Forbes: топ-100 богатейших игроков по размеру баланса';
  document.querySelectorAll('[data-leader-type]').forEach(btn=>btn.classList.toggle('active',btn.dataset.leaderType===leaderboardType));
  if(demoMode){list.innerHTML='<p class="muted leader-empty">Рейтинг доступен после входа через Telegram — в демо-режиме данные других игроков не загружаются.</p>';return;}
  list.innerHTML='<p class="muted leader-empty">Загружаем топ-100 игроков…</p>';
