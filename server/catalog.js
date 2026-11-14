@@ -5,11 +5,11 @@ export const UPGRADES = [
 ];
 export const ASSETS = {
   cars: [
-    {id:'car1',name:"Lada Granta",icon:"\ud83d\ude97",cost:1000000,income:2500,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car2',name:"Lada Vesta",icon:"\ud83d\ude97",cost:1600000,income:4000,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car3',name:"Kia Rio",icon:"\ud83d\ude97",cost:1800000,income:4500,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car4',name:"Hyundai Solaris",icon:"\ud83d\ude97",cost:1700000,income:4300,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car5',name:"Toyota Camry",icon:"\ud83d\ude97",cost:4500000,income:11000,description:"Автомобиль для личного пользования и получения игрового дохода."},
+    {id:'car1',name:"Lada Granta",icon:"\ud83d\ude97",cost:1000000,income:2500,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
+    {id:'car2',name:"Lada Vesta",icon:"\ud83d\ude97",cost:1600000,income:4000,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
+    {id:'car3',name:"Kia Rio",icon:"\ud83d\ude97",cost:1800000,income:4500,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
+    {id:'car4',name:"Hyundai Solaris",icon:"\ud83d\ude97",cost:1700000,income:4300,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
+    {id:'car5',name:"Toyota Camry",icon:"\ud83d\ude97",cost:4500000,income:11000,description:"Автомобиль для личного пользования и получения игрового дохода.",visible:false},
     {id:'car6',name:"BMW 3 Series",icon:"\ud83d\ude97",cost:6000000,income:15000,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car7',name:"Mercedes-Benz E-Class",icon:"\ud83d\ude97",cost:8000000,income:20000,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car8',name:"BMW X5",icon:"\ud83d\ude97",cost:12000000,income:30000,description:"Автомобиль для личного пользования и получения игрового дохода."},
@@ -54,7 +54,10 @@ export const ASSETS = {
     {id:'car47',name:"Lexus LX",icon:"\ud83d\ude97",cost:242630616,income:606577,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car48',name:"Range Rover Sport",icon:"\ud83d\ude97",cost:281451515,income:703629,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car49',name:"Tesla Model 3",icon:"\ud83d\ude97",cost:326483757,income:816209,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car50',name:"Tesla Model S",icon:"\ud83d\ude97",cost:378721158,income:946803,description:"Автомобиль для личного пользования и получения игрового дохода."}
+    {id:'car50',name:"Tesla Model S",icon:"\ud83d\ude97",cost:378721158,income:946803,description:"Автомобиль для личного пользования и получения игрового дохода."},
+    {id:'car51',name:"Bugatti Chiron",icon:"🏎️",image:"https://autorai.nl/wp-content/uploads/2018/03/2018-Bugatti-Chiron-Sport-11-1600x1153.jpg",cost:400000000,income:10000000,description:"Гиперкар Bugatti Chiron — вершина автомобильной коллекции."},
+    {id:'car52',name:"Ducati Panigale V4",icon:"🏍️",image:"https://wallpapercrafter.com/desktop1/632630-Motorcycles-Ducati-Ducati-Panigale-V4-Motorcycle.jpg",cost:36000000,income:900000,description:"Спортивный мотоцикл Ducati Panigale V4."},
+    {id:'car53',name:"Lamborghini Aventador",icon:"🏎️",image:"https://images.collectingcars.com/017152/LAMBO-145.jpg?auto=format%2Ccompress&cs=srgb&fit=clip&q=85&w=2000",cost:250000000,income:6250000,description:"Оранжевый суперкар Lamborghini Aventador."}
   ],
   businesses: [
     {id:'biz1',name:"Кофейня",icon:"\ud83c\udfe2",cost:3000000,income:9000,description:"Прибыльное предприятие с регулярным игровым доходом."},
