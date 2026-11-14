@@ -314,10 +314,10 @@ function renderBusinesses(){
 }
 function renderGarage(){
   const categories=['cars','apartments','businesses','stalls'];
-  const labels={cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
+  const labels={unique:"₿ Уникальные предметы",cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
   categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});
-  const owned=ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
-  $('garageGrid').innerHTML=owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
+  const owned=garageCategory==='unique'?[]:ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
+  $('garageGrid').innerHTML=garageCategory==='unique'?'<article class="case-prize unique"><span>₿</span><h3>Bitcoin (BTC)</h3><p>Предмет из концепции кейса. В этой демоверсии получение и хранение не подключены.</p><small>Уникальный предмет · макет</small></article>':owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
 function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();}
@@ -600,3 +600,18 @@ start().catch(error => {
   const status = document.getElementById('saveStatus');
   if (status) status.textContent = 'Ошибка запуска игры: ' + (error?.message || 'неизвестная ошибка');
 });
+
+
+// Демонстрационная прокрутка кейса: только визуальный макет, без выбора и начисления случайной награды.
+const casePreviewButton=$('casePreviewButton');
+if(casePreviewButton)casePreviewButton.addEventListener('click',()=>{
+ const track=$('caseReelTrack'),status=$('casePreviewStatus');
+ if(!track||track.classList.contains('spinning'))return;
+ track.classList.remove('spinning');void track.offsetWidth;track.classList.add('spinning');
+ casePreviewButton.disabled=true;status.textContent='Идёт демонстрация анимации…';
+ setTimeout(()=>{track.classList.remove('spinning');track.style.transform='translateX(0)';casePreviewButton.disabled=false;status.textContent='Демо завершено · баланс и инвентарь не изменены';},2900);
+});
+document.querySelectorAll('[data-donate]').forEach(button=>button.addEventListener('click',()=>{
+ const status=$('donate'+button.dataset.donate.charAt(0).toUpperCase()+button.dataset.donate.slice(1)+'Status');
+ if(status)status.textContent=button.dataset.donate==='starter'?'Набор: фиксированный стартовый бонус · только макет':'Набор: фиксированные косметические предметы · только макет';
+}));
