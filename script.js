@@ -233,6 +233,16 @@ function demoApi(path,body={}){
     const newLevel=levelForTaps(p.taps).level;
     p.balance+=p.tapReward+(p.taps%100===0?500:0)+Math.max(0,newLevel-oldLevel)*25000;
   }
+  else if(path==='/game/guess-number'){
+    const guess=Number(body.guess),next=Number(localStorage.getItem('ci-guess-number-next-play')||0);
+    if(!Number.isInteger(guess)||guess<1||guess>5)throw Error('Выбери целое число от 1 до 5.');
+    if(next>Date.now())throw Error('Следующий раунд будет доступен через '+Math.ceil((next-Date.now())/60000)+' мин.');
+    const number=1+Math.floor(Math.random()*5),correct=guess===number;
+    if(correct)p.balance+=10000;
+    saveDemo();
+    localStorage.setItem('ci-guess-number-next-play',String(Date.now()+10*60*1000));
+    return {state:game,number,correct,reward:correct?10000:0};
+  }
   else if(path==='/game/buy-upgrade'){const u=UPGRADES.find(x=>x.id===body.upgradeId);if(!u)throw Error('Неизвестный апгрейд');if(game.purchasedUpgrades.includes(u.id))throw Error('Апгрейд уже куплен');if(p.balance<u.cost)throw Error('Недостаточно монет');p.balance-=u.cost;p.tapReward=u.tap;game.purchasedUpgrades.push(u.id);}
   else if(path==='/game/buy-asset'){const a=allAssets.find(x=>x.id===body.assetId);if(!a)throw Error('Объект не найден');if(game.owned.includes(a.id))throw Error('Объект уже куплен');if(p.balance<a.cost)throw Error('Недостаточно монет');p.balance-=a.cost;game.owned.push(a.id);}
   else if(path==='/game/sell-asset'){const a=allAssets.find(x=>x.id===body.assetId);if(!a||!game.owned.includes(a.id))throw Error('Объект не найден в собственности');p.balance+=Math.floor(a.cost*.7);game.owned=game.owned.filter(id=>id!==a.id);delete game.propertyLevels[a.id];}
@@ -415,28 +425,33 @@ $('propertyUpgradeGrid').addEventListener('click',e=>{const b=e.target.closest('
 window.addEventListener('focus',()=>{if(token&&!busy)refresh().catch(()=>{});});
 
 
-// Мини-игры: исключительно виртуальный демо-баланс, без денежных платежей.
-let chosenSide=null,bj=null;
-function betBalance(){ $('betBalance').textContent=money(game?.player?.balance||0)+' ₽'; }
-function betReady(){return !!game&&demoMode;}
-function getStake(id){const n=Math.floor(Number($(id).value));return Number.isFinite(n)&&n>0?n:0;}
-function betDebit(stake){if(!betReady()){alert('Ставки доступны только в локальном демо-режиме: серверные ставки не подключены.');return false;}if(stake<1||game.player.balance<stake){alert('Недостаточно виртуальных рублей или неверная ставка.');return false;}game.player.balance-=stake;saveDemo();renderAll();betBalance();return true;}
-function betCredit(amount){game.player.balance+=Math.floor(amount);saveDemo();renderAll();betBalance();}
-document.querySelectorAll('[data-game-tab]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-game-tab]').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.game-panel').forEach(x=>x.classList.toggle('active',x.id==='game-'+b.dataset.gameTab));betBalance();}));
-document.querySelectorAll('[data-side]').forEach(b=>b.addEventListener('click',()=>{chosenSide=b.dataset.side;document.querySelectorAll('[data-side]').forEach(x=>x.classList.toggle('selected',x===b));}));
-$('coinPlay').addEventListener('click',()=>{const stake=getStake('coinStake');if(!chosenSide){$('coinResult').textContent='Сначала выбери Орёл или Решка.';return;}if(!betDebit(stake))return;const result=Math.random()<.5?'heads':'tails',odds=Number($('coinOdds').value),coin=$('coinVisual');coin.classList.remove('flip');void coin.offsetWidth;coin.classList.add('flip');coin.textContent=result==='heads'?'О':'Р';if(result===chosenSide){const win=stake*odds;betCredit(win);$('coinResult').textContent=`🎉 Победа! ${result==='heads'?'Орёл':'Решка'} · выплата ${money(win)} ₽ (x${odds.toFixed(2)}).`;}else $('coinResult').textContent=`Не угадал. Выпало: ${result==='heads'?'Орёл':'Решка'}. Ставка потеряна.`;});
-$('quickPlay').addEventListener('click',()=>{const stake=getStake('quickStake');if(!betDebit(stake))return;const teams=[['🟢 Север','🔵 Юг'],['🟣 Феникс','🟠 Титаны'],['⚫ Вектор','🔴 Импульс'],['🟡 Кометы','🔷 Атлас']];const pair=teams[Math.floor(Math.random()*teams.length)],winner=Math.floor(Math.random()*2);$('teamA').textContent=pair[0];$('teamB').textContent=pair[1];if(winner===0){const win=stake*1.9;betCredit(win);$('quickResult').textContent=`${pair[0]} победили! Твоя выплата: ${money(win)} ₽ · x1.90`;}else $('quickResult').textContent=`${pair[1]} победили. Ставка потеряна.`;});
-function drawCard(){return Math.floor(Math.random()*13)+1;}
-function cardLabel(n){return ({1:'Туз',11:'Валет',12:'Дама',13:'Король'})[n]||n;}
-function cardValue(n){return n===1?11:Math.min(n,10);}
-function score(hand){let v=hand.reduce((a,n)=>a+cardValue(n),0),aces=hand.filter(n=>n===1).length;while(v>21&&aces-- >0)v-=10;return v;}
-function showBJ(){ $('playerCards').textContent=bj.player.map(cardLabel).join(' · ');$('playerScore').textContent='('+score(bj.player)+')';$('dealerCards').textContent=bj.dealer.map(cardLabel).join(' · ');$('dealerScore').textContent=bj.hidden?'(карты скрыты)':'('+score(bj.dealer)+')';}
-function finishBJ(){bj.hidden=false;while(score(bj.dealer)<17)bj.dealer.push(drawCard());const p=score(bj.player),d=score(bj.dealer);showBJ();$('bjHit').disabled=true;$('bjStand').disabled=true;if(p>21){$('bjResult').textContent=`Перебор (${p}). Раунд проигран.`;}else if(d>21||p>d){const win=bj.stake*2;betCredit(win);$('bjResult').textContent=`Победа! ${p} против ${d}. Выплата ${money(win)} ₽.`;}else if(p===d){betCredit(bj.stake);$('bjResult').textContent=`Ничья ${p}:${d}. Ставка возвращена.`;}else $('bjResult').textContent=`Дилер выиграл: ${d} против ${p}.`;}
-$('bjStart').addEventListener('click',()=>{const stake=getStake('bjStake');if(!betDebit(stake))return;bj={stake,player:[drawCard(),drawCard()],dealer:[drawCard(),drawCard()],hidden:true};showBJ();$('bjResult').textContent='Твой ход. Возьми карту или остановись.';$('bjHit').disabled=false;$('bjStand').disabled=false;});
-$('bjHit').addEventListener('click',()=>{if(!bj||!bj.hidden)return;bj.player.push(drawCard());showBJ();if(score(bj.player)>=21){if(score(bj.player)>21)finishBJ();else finishBJ();}});
-$('bjStand').addEventListener('click',()=>{if(bj&&bj.hidden)finishBJ();});
-const oldUpdateDisplay=updateDisplay;
-updateDisplay=function(){oldUpdateDisplay();if($('betBalance'))betBalance();};
+// Игра «Угадай число»: награда начисляется сервером только за верный ответ.
+const guessCooldownKey='ci-guess-number-next-play';
+function updateGuessBalance(){if($('betBalance'))$('betBalance').textContent=money(game?.player?.balance||0)+' ₽';}
+$('guessButtons').addEventListener('click',async e=>{
+ const button=e.target.closest('[data-guess]');
+ if(!button||button.disabled||busy)return;
+ const guess=Number(button.dataset.guess);
+ if(!Number.isInteger(guess)||guess<1||guess>5)return;
+ const buttons=[...document.querySelectorAll('[data-guess]')];
+ buttons.forEach(x=>x.disabled=true);
+ $('guessResult').textContent='Проверяем ответ…';
+ busy=true;
+ try{
+  const result=await api('/game/guess-number',{guess});
+  game=normalizeGameState(result.state);
+  renderAll();
+  updateGuessBalance();
+  $('guessResult').textContent=result.correct
+   ? '🎉 Верно! Загаданное число — '+result.number+'. Начислено 10 000 ₽!'
+   : 'Не угадал. Было загадано число '+result.number+'. Баланс не изменился.';
+  if(demoMode)localStorage.setItem(guessCooldownKey,String(Date.now()+10*60*1000));
+ }catch(error){
+  $('guessResult').textContent=error.message||'Не удалось проверить ответ.';
+  buttons.forEach(x=>x.disabled=false);
+ }finally{busy=false;}
+});
+document.querySelector('[data-page="bets"]').addEventListener('click',updateGuessBalance);
 const tapButton=$('tapButton');
 tapButton.addEventListener('click',e=>{e.preventDefault();const r=tapButton.getBoundingClientRect(),el=document.createElement('span');el.className='tap-float';el.textContent='+'+money(game?.player?.tapReward||50)+' ₽';el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+20)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),650);},{passive:false});
 
