@@ -193,11 +193,11 @@ body:before{content:"₿";position:fixed;z-index:-1;left:50%;top:48%;transform:t
 
 /* CRYPTO INVESTOR — gold mobile navigation refresh */
 :root{color-scheme:dark;--gold:#f5bd32;--gold-bright:#ffd45a;--gold-soft:#9b6a13}
-body{background:radial-gradient(ellipse at 50% 0%,#49300b 0%,#171108 38%,#050505 82%);padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+body{background:radial-gradient(ellipse at 50% 0%,#49300b 0%,#171108 38%,#050505 82%);padding-bottom:calc(132px + env(safe-area-inset-bottom))}
 .logo span,h1 span,.eyebrow{color:var(--gold-bright)}
 .topbar{position:relative;display:block;padding:15px max(5vw,20px);background:#090909e8;border-bottom:1px solid #e9ad3430}
-.topbar nav{position:fixed;z-index:50;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));display:flex;justify-content:space-around;align-items:center;gap:3px;padding:9px 6px;border:1px solid #ffffff18;border-radius:24px;background:rgba(17,17,17,.94);box-shadow:0 8px 35px #000b;backdrop-filter:blur(18px)}
-.nav-btn{display:flex;flex:1;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 3px;border:0;border-radius:17px;color:#a9a9a9;font-size:12px;font-weight:700;white-space:nowrap}
+.topbar nav{position:fixed;z-index:50;left:8px;right:8px;bottom:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));justify-content:stretch;align-items:center;gap:4px;padding:7px 6px calc(7px + env(safe-area-inset-bottom));border:1px solid #ffffff18;border-radius:20px 20px 0 0;background:rgba(17,17,17,.96);box-shadow:0 8px 35px #000b;backdrop-filter:blur(18px)}
+.nav-btn{display:flex;flex:initial;min-width:0;width:100%;min-height:48px;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px;border:0;border-radius:13px;color:#a9a9a9;font-size:11px;font-weight:700;white-space:nowrap}
 .nav-icon{font-size:22px;line-height:1.1;color:inherit}
 .nav-btn.active,.nav-btn:hover{background:linear-gradient(135deg,#ffd34c,#e99a08);color:#171006;border:0;box-shadow:0 4px 18px #f2b51b55}
 .admin-nav-btn{position:absolute;right:0;bottom:100%;background:#171717}
@@ -217,7 +217,7 @@ button{touch-action:manipulation}
 .shop-buy,.game-action,.buy-button{background:linear-gradient(135deg,#ffd34c,#e99a08);color:#1b1304}
 .message{color:#f6ce69}
 .save-status{color:#a8956e}
-@media(min-width:760px){.topbar nav{left:50%;right:auto;bottom:16px;transform:translateX(-50%);width:min(620px,calc(100% - 40px))}body{padding-bottom:100px}}
+@media(min-width:760px){.topbar nav{left:50%;right:auto;bottom:16px;transform:translateX(-50%);width:min(620px,calc(100% - 40px));display:flex;justify-content:space-around;gap:3px;padding:9px 6px;border-radius:24px}.nav-btn{flex:1;min-height:0;width:auto;padding:7px 3px;font-size:12px}.nav-icon{font-size:22px}body{padding-bottom:100px}}
 @media(max-width:480px){main{width:92%;padding:22px 0 36px}.hero{margin:8px 0 22px}.topbar{padding:10px 16px}.logo{font-size:20px}.balance-card{padding:20px}.tap-area{padding:24px 0 18px}}
 
 /* Normalize legacy green accents to the requested gold palette. */
