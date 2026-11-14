@@ -17,7 +17,7 @@ import { UPGRADES, ASSETS, ALL_ASSETS, getIncome } from './catalog.js';
 const { Pool } = pg;
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PG_POOL_MAX || 20), idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
-const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`)]);
+const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`),pool.query(`CREATE TABLE IF NOT EXISTS player_case_tokens (telegram_id TEXT PRIMARY KEY, tokens INTEGER NOT NULL DEFAULT 0 CHECK(tokens >= 0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_starter_claims (telegram_id TEXT PRIMARY KEY, claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_unique_items (telegram_id TEXT NOT NULL, item_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity > 0), PRIMARY KEY(telegram_id,item_id))`) ]);
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 2, enableReadyCheck: true }) : null;
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -70,9 +70,11 @@ async function transaction(fn) { const c=await pool.connect(); try { await c.que
 async function getState(client,id,applyIncome=true) {
   const p=(await client.query('SELECT * FROM players WHERE telegram_id=$1 FOR UPDATE',[id])).rows[0];
   if (!p) throw Object.assign(new Error('Игрок не найден'),{status:404});
-  const [up,assets]=await Promise.all([
+  const [up,assets,caseRow,uniqueRows]=await Promise.all([
     client.query('SELECT upgrade_id FROM player_upgrades WHERE telegram_id=$1',[id]),
-    client.query('SELECT asset_id,level FROM player_assets WHERE telegram_id=$1',[id])
+    client.query('SELECT asset_id,level FROM player_assets WHERE telegram_id=$1',[id]),
+    client.query('SELECT tokens FROM player_case_tokens WHERE telegram_id=$1',[id]),
+    client.query('SELECT item_id,quantity FROM player_unique_items WHERE telegram_id=$1',[id])
   ]);
   const levels=Object.fromEntries(assets.rows.map(x=>[x.asset_id,x.level]));
   const income=assets.rows.reduce((sum,x)=>{const a=ALL_ASSETS.find(z=>z.id===x.asset_id);return sum+(a?getIncome(a,x.level):0)},0);
@@ -83,7 +85,7 @@ async function getState(client,id,applyIncome=true) {
     else await client.query('UPDATE players SET last_income_at=NOW() WHERE telegram_id=$1',[id]);
     p.balance=Number(p.balance)+earned;
   }
-  return { player:{telegramId:String(p.telegram_id),username:p.username,firstName:p.first_name,balance:Number(p.balance),taps:Number(p.taps),tapReward:p.tap_reward}, owned:assets.rows.map(x=>x.asset_id), purchasedUpgrades:up.rows.map(x=>x.upgrade_id), propertyLevels:levels, passiveIncome:income };
+  return { player:{telegramId:String(p.telegram_id),username:p.username,firstName:p.first_name,balance:Number(p.balance),taps:Number(p.taps),tapReward:p.tap_reward}, owned:assets.rows.map(x=>x.asset_id), purchasedUpgrades:up.rows.map(x=>x.upgrade_id), propertyLevels:levels, passiveIncome:income, caseTokens:Number(caseRow.rows[0]?.tokens||0), uniqueItems:Object.fromEntries(uniqueRows.rows.map(x=>[x.item_id,Number(x.quantity)])) };
 }
 app.post('/api/auth/telegram', async (req,res,next)=>{ try {
   const user=verifyTelegramInitData(req.body?.initData);
@@ -121,6 +123,44 @@ app.get('/api/referral/link',auth,async(req,res,next)=>{try{
  res.json({link,invitedCount:Number(count.rows[0]?.total||0)});
  }catch(e){next(e)}});
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
+const CASE_REWARDS = Object.freeze({
+ bitcoin:{label:'Bitcoin (BTC)',type:'unique',itemId:'bitcoin'},
+ cash5000000:{label:'5 000 000 ₽',type:'cash',amount:5000000},
+ cash4000000:{label:'4 000 000 ₽',type:'cash',amount:4000000},
+ cash3000000:{label:'3 000 000 ₽',type:'cash',amount:3000000},
+ cash2000000:{label:'2 000 000 ₽',type:'cash',amount:2000000},
+ cash1000000:{label:'1 000 000 ₽',type:'cash',amount:1000000},
+ cash500000:{label:'500 000 ₽',type:'cash',amount:500000},
+ cash100000:{label:'100 000 ₽',type:'cash',amount:100000}
+});
+app.post('/api/game/claim-starter-pack',auth,async(req,res,next)=>{try{
+ const state=await transaction(async c=>{
+  const claim=await c.query('INSERT INTO player_starter_claims(telegram_id) VALUES($1) ON CONFLICT DO NOTHING RETURNING telegram_id',[req.playerId]);
+  if(!claim.rowCount)throw Object.assign(new Error('Стартовый набор уже получен.'),{status:409});
+  await c.query('INSERT INTO player_case_tokens(telegram_id,tokens) VALUES($1,1) ON CONFLICT(telegram_id) DO UPDATE SET tokens=player_case_tokens.tokens+1',[req.playerId]);
+  return getState(c,req.playerId,false);
+ });
+ res.json(state);
+ }catch(e){next(e)}});
+app.post('/api/game/open-case',auth,async(req,res,next)=>{try{
+ const reward=CASE_REWARDS[String(req.body?.rewardKey||'')];
+ if(!reward)throw Object.assign(new Error('Сначала выбери награду из списка.'),{status:400});
+ const result=await transaction(async c=>{
+  const state=await getState(c,req.playerId);
+  const token=await c.query('SELECT tokens FROM player_case_tokens WHERE telegram_id=$1 FOR UPDATE',[req.playerId]);
+  const tokens=Number(token.rows[0]?.tokens||0);
+  if(tokens>0)await c.query('UPDATE player_case_tokens SET tokens=tokens-1 WHERE telegram_id=$1',[req.playerId]);
+  else{
+   const debit=await c.query('UPDATE players SET balance=balance-5000000,updated_at=NOW() WHERE telegram_id=$1 AND balance>=5000000 RETURNING balance',[req.playerId]);
+   if(!debit.rowCount)throw Object.assign(new Error('Нужно 5 000 000 ₽ или бесплатный билет из стартового набора.'),{status:400});
+  }
+  if(reward.type==='cash')await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,reward.amount]);
+  else await c.query('INSERT INTO player_unique_items(telegram_id,item_id,quantity) VALUES($1,$2,1) ON CONFLICT(telegram_id,item_id) DO UPDATE SET quantity=player_unique_items.quantity+1',[req.playerId,reward.itemId]);
+  return {state:await getState(c,req.playerId,false),reward:reward.label};
+ });
+ res.json(result);
+ }catch(e){next(e)}});
+
 function levelForTaps(taps){
  const safeTaps=Math.max(0,Math.floor(Number(taps)||0));
  const level=Math.min(999,Math.floor(safeTaps/50)+1);
