@@ -253,6 +253,7 @@ function demoApi(path,body={}){
     game.uniqueItems=game.uniqueItems||{};game.uniqueItems[item.id]=(game.uniqueItems[item.id]||0)+1;
     saveDemo();return {state:game,reward:{itemId:item.id,label:item.label}};
   }
+  else if(path==='/game/sell-unique-item'){const item=CASE_ITEMS.find(x=>x.id===body.itemId);if(!item||!game.uniqueItems?.[item.id])throw Error('У тебя нет этого предмета');game.uniqueItems[item.id]--;if(!game.uniqueItems[item.id])delete game.uniqueItems[item.id];p.balance+=item.sellPrice;}
   else if(path==='/game/guess-number'){
     const guess=Number(body.guess);
     if(!Number.isInteger(guess)||guess<1||guess>5)throw Error('Выбери целое число от 1 до 5.');
@@ -329,7 +330,7 @@ function renderGarage(){
   const labels={unique:"₿ Уникальные предметы",cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
   categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});const uniqueCount=$('garageCountUnique');if(uniqueCount)uniqueCount.textContent=`${Object.values(game.uniqueItems||{}).reduce((sum,n)=>sum+Number(n||0),0)} предметов`;
   const owned=garageCategory==='unique'?[]:ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
-  $('garageGrid').innerHTML=garageCategory==='unique'?(Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).length?Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).map(([id,count])=>{const item=CASE_ITEMS.find(x=>x.id===id);return item?'<article class="case-prize unique"><span>'+item.icon+'</span><h3>'+item.name+'</h3><p>В коллекции: '+money(count)+'</p><small>'+item.rarity+' · косметический предмет</small></article>':''}).join(''):'<p class="muted empty-garage">Пока нет уникальных предметов. Открой Стандартный кейс.</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
+  $('garageGrid').innerHTML=garageCategory==='unique'?(Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).length?Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).map(([id,count])=>{const item=CASE_ITEMS.find(x=>x.id===id);return item?'<article class="case-prize unique"><span>'+item.icon+'</span><h3>'+item.name+'</h3><p>В коллекции: '+money(count)+'</p><small>'+item.rarity+' · косметический предмет</small><button class="shop-sell" data-unique-sell="'+item.id+'">Продать · '+money(item.sellPrice)+' ₽</button></article>':''}).join(''):'<p class="muted empty-garage">Пока нет уникальных предметов. Открой Стандартный кейс.</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
 function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();renderGarage();if(typeof updateCaseUI==='function')updateCaseUI();}
@@ -502,7 +503,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',
 $('upgradeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-upgrade]');if(b)action(()=>api('/game/buy-upgrade',{upgradeId:b.dataset.upgrade}),'Апгрейд куплен!');});
 $('businessCategories').addEventListener('click',e=>{const b=e.target.closest('[data-category]');if(!b)return;activeCategory=b.dataset.category;document.querySelectorAll('.category-btn').forEach(x=>x.classList.toggle('active',x===b));renderBusinesses();});
 $('businessGrid').addEventListener('click',e=>{const sell=e.target.closest('[data-sell]');if(sell){if(confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:sell.dataset.sell}),'Объект продан!');return;}const b=e.target.closest('[data-asset]');if(b)action(()=>api('/game/buy-asset',{assetId:b.dataset.asset}),'Поздравляем с покупкой!');});
-$('garageGrid').addEventListener('click',e=>{const b=e.target.closest('[data-garage-sell]');if(b&&confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:b.dataset.garageSell}),'Объект продан!');});
+$('garageGrid').addEventListener('click',e=>{const unique=e.target.closest('[data-unique-sell]');if(unique){const item=CASE_ITEMS.find(x=>x.id===unique.dataset.uniqueSell);if(item&&confirm('Продать '+item.name+' за '+money(item.sellPrice)+' ₽?'))action(()=>api('/game/sell-unique-item',{itemId:item.id}),'Уникальный предмет продан!');return;}const b=e.target.closest('[data-garage-sell]');if(b&&confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:b.dataset.garageSell}),'Объект продан!');});
 document.querySelectorAll('[data-garage]').forEach(b=>b.addEventListener('click',()=>{garageCategory=b.dataset.garage;document.querySelectorAll('[data-garage]').forEach(x=>x.classList.toggle('active',x===b));renderGarage();}));
 $('propertyUpgradeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-property-upgrade]');if(b)action(()=>api('/game/upgrade-asset',{assetId:b.dataset.propertyUpgrade}),'Имущество улучшено!');});
 window.addEventListener('focus',()=>{if(token&&!busy)refresh().catch(()=>{});});
@@ -616,14 +617,14 @@ start().catch(error => {
 
 // 
 const CASE_ITEMS=[
- {id:'neon_coin',name:'Неоновая монета',icon:'🪙',rarity:'Обычный'},
- {id:'pixel_crown',name:'Пиксельная корона',icon:'👑',rarity:'Редкий'},
- {id:'blue_flame',name:'Синее пламя',icon:'🔥',rarity:'Редкий'},
- {id:'cyber_glasses',name:'Кибер-очки',icon:'🥽',rarity:'Эпический'},
- {id:'golden_badge',name:'Золотой значок',icon:'🏅',rarity:'Эпический'},
- {id:'holo_cube',name:'Голографический куб',icon:'🧊',rarity:'Легендарный'},
- {id:'star_wings',name:'Звёздные крылья',icon:'🪽',rarity:'Легендарный'},
- {id:'crystal_fox',name:'Кристальный лис',icon:'🦊',rarity:'Мифический'}
+ {id:'neon_coin',name:'Неоновая монета',icon:'🪙',rarity:'Обычный',sellPrice:250000},
+ {id:'pixel_crown',name:'Пиксельная корона',icon:'👑',rarity:'Редкий',sellPrice:1800000},
+ {id:'blue_flame',name:'Синее пламя',icon:'🔥',rarity:'Редкий',sellPrice:950000},
+ {id:'cyber_glasses',name:'Кибер-очки',icon:'🥽',rarity:'Эпический',sellPrice:2400000},
+ {id:'golden_badge',name:'Золотой значок',icon:'🏅',rarity:'Эпический',sellPrice:1250000},
+ {id:'holo_cube',name:'Голографический куб',icon:'🧊',rarity:'Легендарный',sellPrice:4600000},
+ {id:'star_wings',name:'Звёздные крылья',icon:'🪽',rarity:'Легендарный',sellPrice:7800000},
+ {id:'crystal_fox',name:'Кристальный лис',icon:'🦊',rarity:'Мифический',sellPrice:9500000}
 ];
 let caseSpinning=false;
 function updateCaseUI(){
