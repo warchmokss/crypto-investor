@@ -237,13 +237,11 @@ function demoApi(path,body={}){
     p.balance+=p.tapReward*count+bonuses+Math.max(0,newLevel-oldLevel)*25000;
   }
   else if(path==='/game/guess-number'){
-    const guess=Number(body.guess),next=Number(localStorage.getItem('ci-guess-number-next-play')||0);
+    const guess=Number(body.guess);
     if(!Number.isInteger(guess)||guess<1||guess>5)throw Error('Выбери целое число от 1 до 5.');
-    if(next>Date.now())throw Error('Следующий раунд будет доступен через '+Math.ceil((next-Date.now())/60000)+' мин.');
     const number=1+Math.floor(Math.random()*5),correct=guess===number;
     if(correct)p.balance+=10000;
     saveDemo();
-    localStorage.setItem('ci-guess-number-next-play',String(Date.now()+10*60*1000));
     return {state:game,number,correct,reward:correct?10000:0};
   }
   else if(path==='/game/buy-upgrade'){const u=UPGRADES.find(x=>x.id===body.upgradeId);if(!u)throw Error('Неизвестный апгрейд');if(game.purchasedUpgrades.includes(u.id))throw Error('Апгрейд уже куплен');if(p.balance<u.cost)throw Error('Недостаточно монет');p.balance-=u.cost;p.tapReward=u.tap;game.purchasedUpgrades.push(u.id);}
@@ -463,7 +461,6 @@ window.addEventListener('focus',()=>{if(token&&!busy)refresh().catch(()=>{});});
 
 
 // Игра «Угадай число»: награда начисляется сервером только за верный ответ.
-const guessCooldownKey='ci-guess-number-next-play';
 function updateGuessBalance(){if($('betBalance'))$('betBalance').textContent=money(game?.player?.balance||0)+' ₽';}
 $('guessButtons').addEventListener('click',async e=>{
  const button=e.target.closest('[data-guess]');
