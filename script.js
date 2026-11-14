@@ -220,9 +220,10 @@ function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'
 function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||300},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0};}
 function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(!saved||!saved.player||typeof saved.player!=='object')return emptyGame();const valid=normalizeGameState(saved);if(!valid.purchasedUpgrades.length&&Number(valid.player.tapReward)===50){valid.player.tapReward=300;localStorage.setItem(DEMO_KEY,JSON.stringify(valid));}return valid;}catch{return emptyGame();}}
 function levelForTaps(taps){
-  let level=1, nextThreshold=100, step=150, total=0;
-  while(level<999 && taps>=nextThreshold){total=nextThreshold;level++;nextThreshold+=step;step+=50;}
-  return {level,progress:Math.max(0,taps-total),needed:100+(level-1)*50,nextThreshold};
+  const safeTaps=Math.max(0,Math.floor(Number(taps)||0));
+  const level=Math.min(999,Math.floor(safeTaps/50)+1);
+  const total=(level-1)*50;
+  return {level,progress:Math.max(0,safeTaps-total),needed:50,nextThreshold:level*50};
 }
 function demoApi(path,body={}){
   if(path==='/game/state')return game;
@@ -280,11 +281,11 @@ async function api(path,body) {
 function updateDisplay(){
   if(!game)return; const p=game.player;
   $('balance').textContent=money(p.balance);$('tapCount').textContent=money(p.taps);
-  const taps=Number(p.taps||0),levelInfo=levelForTaps(taps),level=levelInfo.level,nextThreshold=levelInfo.nextThreshold;
+  const taps=Number(p.taps||0),levelInfo=levelForTaps(taps),level=levelInfo.level,progress=levelInfo.progress;
   const levelName=$('levelName'),levelText=$('levelProgressText'),levelBar=$('levelProgress');
   if(levelName)levelName.textContent='Уровень '+level;
-  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':money(taps)+' / '+money(nextThreshold)+' этапов';
-  if(levelBar)levelBar.style.width=(level>=999?100:Math.min(100,(taps/nextThreshold)*100))+'%';
+  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':money(progress)+' / 50 этапов';
+  if(levelBar)levelBar.style.width=(level>=999?100:Math.min(100,(progress/50)*100))+'%';
   $('upgradeBalance').textContent=money(p.balance)+' ₽';$('businessBalance').textContent=money(p.balance)+' ₽';$('passiveIncome').textContent=money(game.passiveIncome)+' ₽/мин';
   $('tapButton').querySelector('small').textContent=`+${money(p.tapReward)} ₽ за нажатие`;
   $('tapButton').setAttribute('aria-label',`Получить ${p.tapReward} рублей`);
