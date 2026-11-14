@@ -101,17 +101,18 @@ function levelForTaps(taps){
  return {level,progress:Math.max(0,taps-total),needed:100+(level-1)*50};
 }
 app.post('/api/game/tap',auth,async(req,res,next)=>{try{
+ const count=Number(req.body?.count??1);
+ if(!Number.isSafeInteger(count)||count<1||count>1000)throw Object.assign(new Error('Некорректное количество тапов.'),{status:400});
  const state=await transaction(async c=>{
   const s=await getState(c,req.playerId);
-  const oldLevel=levelForTaps(Number(s.player.taps||0)).level;
-  const result=await c.query('UPDATE players SET taps=taps+1,balance=balance+tap_reward+CASE WHEN (taps+1)%100=0 THEN 500 ELSE 0 END,updated_at=NOW() WHERE telegram_id=$1 RETURNING balance,taps,tap_reward',[req.playerId]);
-  const newLevel=levelForTaps(Number(result.rows[0].taps)).level;
+  const oldTaps=Number(s.player.taps||0),oldLevel=levelForTaps(oldTaps).level;
+  const result=await c.query('UPDATE players SET taps=taps+$2,balance=balance+tap_reward*$2+((FLOOR((taps+$2)::numeric/100)-FLOOR(taps::numeric/100))*500),updated_at=NOW() WHERE telegram_id=$1 RETURNING balance,taps,tap_reward',[req.playerId,count]);
+  const newTaps=Number(result.rows[0].taps),newLevel=levelForTaps(newTaps).level;
   const levelReward=Math.max(0,newLevel-oldLevel)*25000;
-  if(levelReward) await c.query('UPDATE players SET balance=balance+$2 WHERE telegram_id=$1',[req.playerId,levelReward]);
+  if(levelReward)await c.query('UPDATE players SET balance=balance+$2 WHERE telegram_id=$1',[req.playerId,levelReward]);
   s.player.balance=Number(result.rows[0].balance)+levelReward;
-  s.player.taps=Number(result.rows[0].taps);
-  s.player.tapReward=Number(result.rows[0].tap_reward);
-  return {...s,bonus:s.player.taps%100===0?500:0,levelReward};
+  s.player.taps=newTaps;s.player.tapReward=Number(result.rows[0].tap_reward);
+  return {...s,bonus:(Math.floor(newTaps/100)-Math.floor(oldTaps/100))*500,levelReward};
  });
  res.json(state);
  }catch(e){next(e)}});
