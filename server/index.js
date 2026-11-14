@@ -90,7 +90,7 @@ app.post('/api/auth/telegram', async (req,res,next)=>{ try {
   await bansReady;
   const ban=await pool.query('SELECT expires_at FROM player_account_bans WHERE telegram_id=$1 AND (expires_at IS NULL OR expires_at>NOW())',[user.id]);
   if(ban.rowCount) throw Object.assign(new Error(ban.rows[0].expires_at ? 'Аккаунт заблокирован до '+new Date(ban.rows[0].expires_at).toLocaleString('ru-RU')+'.' : 'Аккаунт заблокирован навсегда.'),{status:403});
-  await pool.query(`INSERT INTO players(telegram_id,username,first_name,balance) VALUES($1,$2,$3,50000) ON CONFLICT(telegram_id) DO UPDATE SET username=EXCLUDED.username,first_name=EXCLUDED.first_name,updated_at=NOW()`,[user.id,user.username,user.firstName]);
+  await pool.query(`INSERT INTO players(telegram_id,username,first_name,balance) VALUES($1,$2,$3,100000) ON CONFLICT(telegram_id) DO UPDATE SET username=EXCLUDED.username,first_name=EXCLUDED.first_name,updated_at=NOW()`,[user.id,user.username,user.firstName]);
   await pool.query(`UPDATE players SET tap_reward=300 WHERE telegram_id=$1 AND tap_reward=50 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)`,[user.id]);
   res.json({ token:makeSession(user) });
  } catch(e){next(Object.assign(e,{status:401}));} });
