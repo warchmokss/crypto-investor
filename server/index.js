@@ -17,7 +17,7 @@ import { UPGRADES, ASSETS, ALL_ASSETS, getIncome } from './catalog.js';
 const { Pool } = pg;
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PG_POOL_MAX || 20), idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
-const bansReady = pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
+const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`)]);
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 2, enableReadyCheck: true }) : null;
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -90,10 +90,36 @@ app.post('/api/auth/telegram', async (req,res,next)=>{ try {
   await bansReady;
   const ban=await pool.query('SELECT expires_at FROM player_account_bans WHERE telegram_id=$1 AND (expires_at IS NULL OR expires_at>NOW())',[user.id]);
   if(ban.rowCount) throw Object.assign(new Error(ban.rows[0].expires_at ? 'Аккаунт заблокирован до '+new Date(ban.rows[0].expires_at).toLocaleString('ru-RU')+'.' : 'Аккаунт заблокирован навсегда.'),{status:403});
-  await pool.query(`INSERT INTO players(telegram_id,username,first_name,balance) VALUES($1,$2,$3,100000) ON CONFLICT(telegram_id) DO UPDATE SET username=EXCLUDED.username,first_name=EXCLUDED.first_name,updated_at=NOW()`,[user.id,user.username,user.firstName]);
-  await pool.query(`UPDATE players SET tap_reward=300 WHERE telegram_id=$1 AND tap_reward=50 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)`,[user.id]);
+  await transaction(async c=>{
+    const created=await c.query(`INSERT INTO players(telegram_id,username,first_name,balance) VALUES($1,$2,$3,100000) ON CONFLICT(telegram_id) DO NOTHING RETURNING telegram_id`,[user.id,user.username,user.firstName]);
+    if(!created.rowCount){
+      await c.query('UPDATE players SET username=$2,first_name=$3,updated_at=NOW() WHERE telegram_id=$1',[user.id,user.username,user.firstName]);
+      await c.query('DELETE FROM player_referrals WHERE referred_telegram_id=$1 AND rewarded_at IS NULL',[user.id]);
+    } else {
+      const referral=(await c.query('SELECT referrer_telegram_id FROM player_referrals WHERE referred_telegram_id=$1 AND rewarded_at IS NULL FOR UPDATE',[user.id])).rows[0];
+      if(referral && String(referral.referrer_telegram_id)!==String(user.id)){
+        const credited=await c.query('UPDATE players SET balance=balance+20000,updated_at=NOW() WHERE telegram_id=$1 RETURNING telegram_id',[referral.referrer_telegram_id]);
+        if(credited.rowCount){
+          await c.query('UPDATE players SET balance=balance+20000,updated_at=NOW() WHERE telegram_id=$1',[user.id]);
+          await c.query('UPDATE player_referrals SET rewarded_at=NOW() WHERE referred_telegram_id=$1',[user.id]);
+        } else {
+          await c.query('DELETE FROM player_referrals WHERE referred_telegram_id=$1',[user.id]);
+        }
+      }
+    }
+    await c.query('UPDATE players SET tap_reward=300 WHERE telegram_id=$1 AND tap_reward=50 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)',[user.id]);
+  });
   res.json({ token:makeSession(user) });
  } catch(e){next(Object.assign(e,{status:401}));} });
+app.get('/api/referral/link',auth,async(req,res,next)=>{try{
+ await bansReady;
+ const result=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
+ const data=await result.json();
+ if(!result.ok||!data.ok||!data.result?.username)throw new Error('Не удалось получить ссылку на Telegram-бота.');
+ const link=`https://t.me/${data.result.username}?start=ref_${encodeURIComponent(String(req.playerId))}`;
+ const count=await pool.query('SELECT COUNT(*)::int AS total FROM player_referrals WHERE referrer_telegram_id=$1 AND rewarded_at IS NOT NULL',[req.playerId]);
+ res.json({link,invitedCount:Number(count.rows[0]?.total||0)});
+ }catch(e){next(e)}});
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
 function levelForTaps(taps){
  let level=1,nextThreshold=100,step=150,total=0;
@@ -256,7 +282,16 @@ app.post('/api/telegram/webhook', async (req,res) => {
     const chatId = message?.chat?.id;
     if (!text || !chatId) return;
     // /start must be available to every player and launch the app as a Telegram Mini App.
-    if (/^\/start(?:\s|$)/i.test(text)) {
+    const startCommand=text.match(/^\/start(?:@\w+)?(?:\s+(\S+))?$/i);
+    if (startCommand) {
+      await bansReady;
+      const payload=startCommand[1]||'';
+      const referral=payload.match(/^ref_(\d{5,20})$/);
+      if(referral && referral[1]!==senderId){
+        await pool.query(`INSERT INTO player_referrals(referred_telegram_id,referrer_telegram_id)
+          SELECT $1,$2 WHERE EXISTS(SELECT 1 FROM players WHERE telegram_id=$2)
+          ON CONFLICT(referred_telegram_id) DO NOTHING`,[senderId,referral[1]]);
+      }
       const appUrl = PUBLIC_URL.replace(/\/+$/, '');
       await sendBotMessage(chatId, 'Нажми кнопку «Играть», чтобы открыть актуальную версию CRYPTO INVESTOR.', {
         inline_keyboard: [[{ text: '🎮 Играть', web_app: { url: appUrl } }]]
