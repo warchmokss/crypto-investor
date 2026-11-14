@@ -310,7 +310,25 @@ function renderGarage(){
 }
 
 function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();}
-function showFireworks(){const layer=$('fireworks');if(!layer)return;layer.innerHTML='';layer.classList.add('show');setTimeout(()=>layer.classList.remove('show'),700)}
+function showFireworks(){
+ const layer=$('fireworks');if(!layer)return;layer.innerHTML='';
+ for(let i=0;i<42;i++){
+  const spark=document.createElement('i');spark.className='spark';
+  spark.style.left=(10+Math.random()*80)+'%';spark.style.top=(12+Math.random()*48)+'%';
+  spark.style.setProperty('--dx',(Math.random()*220-110)+'px');
+  spark.style.setProperty('--dy',(Math.random()*220-110)+'px');
+  spark.style.setProperty('--hue',Math.floor(Math.random()*360));
+  layer.appendChild(spark);
+ }
+ layer.classList.add('show');setTimeout(()=>layer.classList.remove('show'),1400);
+}
+function showLevelUpPopup(reward,level){
+ const popup=$('bonusPopup');if(!popup)return;
+ popup.textContent='🎉 НОВЫЙ УРОВЕНЬ '+level+'! +'+money(reward)+' ₽';
+ popup.classList.remove('show');void popup.offsetWidth;popup.classList.add('show');
+ showFireworks();
+ setTimeout(()=>popup.classList.remove('show'),2700);
+}
 async function refresh(){game=normalizeGameState(await api('/game/state'));renderAll();}
 async function action(fn,successText){if(busy)return;busy=true;try{game=await fn();renderAll();$('tapMessage').textContent=successText||'Готово!';$('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';}catch(e){$('tapMessage').textContent=e.message;$('saveStatus').textContent='Не удалось выполнить действие';}finally{busy=false}}
 let connectionTimer=null,connectionStartedAt=0,connectionStage='Подключаемся к игровому серверу';
@@ -415,8 +433,9 @@ async function flushTapQueue(){
     const newLevel=levelForTaps(Number(game.player.taps||0)).level;
     const levelsGained=Math.max(0,newLevel-oldLevel);
     const levelReward=Number(next.levelReward ?? (levelsGained*25000));
-    if(Math.floor(game.player.taps/100)>Math.floor(oldTaps/100))showFireworks();
     renderAll();
+    if(levelsGained>0)showLevelUpPopup(levelReward,newLevel);
+    else if(Math.floor(game.player.taps/100)>Math.floor(oldTaps/100))showFireworks();
     $('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';
     $('tapMessage').textContent=levelsGained>0
       ? '🎉 Вы перешли на '+(levelsGained===1?'следующий уровень!':'новый уровень!')+' +'+money(levelReward)+' ₽ зачислено на баланс.'
@@ -485,11 +504,10 @@ $('guessButtons').addEventListener('click',async e=>{
   $('guessResult').textContent=result.correct
    ? '🎉 Верно! Загаданное число — '+result.number+'. Начислено 10 000 ₽!'
    : 'Не угадал. Было загадано число '+result.number+'. Баланс не изменился.';
-  if(demoMode)localStorage.setItem(guessCooldownKey,String(Date.now()+10*60*1000));
  }catch(error){
   $('guessResult').textContent=error.message||'Не удалось проверить ответ.';
   buttons.forEach(x=>x.disabled=false);
- }finally{busy=false;}
+ }finally{busy=false;buttons.forEach(x=>x.disabled=false);}
 });
 document.querySelector('[data-page="bets"]').addEventListener('click',updateGuessBalance);
 const tapButton=$('tapButton');

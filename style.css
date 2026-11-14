@@ -236,3 +236,7 @@ button{touch-action:manipulation}
 
 /* Игра «Угадай число» */
 .guess-card{max-width:620px;text-align:center}.guess-card h2{margin-top:0}.guess-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:24px 0}.guess-btn{min-height:64px;border:1px solid #f5bd3266;border-radius:14px;background:linear-gradient(135deg,#3a2a0b,#171108);color:#ffe08a;font-size:26px;font-weight:900}.guess-btn:hover:not(:disabled){background:linear-gradient(135deg,#ffd34c,#e99a08);color:#1b1304}.guess-btn:disabled{opacity:.5;cursor:not-allowed}.guess-cooldown{font-size:12px;margin-top:18px}@media(max-width:420px){.guess-buttons{gap:6px}.guess-btn{min-height:54px}}
+
+/* Яркое уведомление о повышении уровня */
+.bonus-popup.show { animation: popup-in 2.6s ease both, level-glow 1.1s ease-in-out 2; }
+@keyframes level-glow { 0%,100% { box-shadow:0 0 24px #4bcaff88; } 50% { box-shadow:0 0 58px #ffb347,0 0 90px #4bcaffcc; } }
