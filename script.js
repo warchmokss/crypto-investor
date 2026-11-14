@@ -259,6 +259,11 @@ async function api(path,body) {
 function updateDisplay(){
   if(!game)return; const p=game.player;
   $('balance').textContent=money(p.balance);$('tapCount').textContent=money(p.taps);
+  const level=Math.min(999,Math.floor(Number(p.taps||0)/100)+1),progress=level>=999?100:Number(p.taps||0)%100;
+  const levelName=$('levelName'),levelText=$('levelProgressText'),levelBar=$('levelProgress');
+  if(levelName)levelName.textContent='Уровень '+level;
+  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':progress+' / 100 тапов';
+  if(levelBar)levelBar.style.width=progress+'%';
   $('upgradeBalance').textContent=money(p.balance)+' ₽';$('businessBalance').textContent=money(p.balance)+' ₽';$('passiveIncome').textContent=money(game.passiveIncome)+' ₽/мин';
   $('tapButton').querySelector('small').textContent=`+${money(p.tapReward)} ₽ за нажатие`;
   $('tapButton').setAttribute('aria-label',`Получить ${p.tapReward} рублей`);
@@ -284,7 +289,7 @@ function renderGarage(){
 }
 
 function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();}
-function showFireworks(){const layer=$('fireworks'),popup=$('bonusPopup');layer.innerHTML='';layer.classList.add('show');popup.textContent='🎉 Бонус за 100 нажатий!';popup.classList.add('show');setTimeout(()=>{layer.classList.remove('show');popup.classList.remove('show');},2200)}
+function showFireworks(){const layer=$('fireworks');if(!layer)return;layer.innerHTML='';layer.classList.add('show');setTimeout(()=>layer.classList.remove('show'),700)}
 async function refresh(){game=normalizeGameState(await api('/game/state'));renderAll();}
 async function action(fn,successText){if(busy)return;busy=true;try{game=await fn();renderAll();$('tapMessage').textContent=successText||'Готово!';$('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';}catch(e){$('tapMessage').textContent=e.message;$('saveStatus').textContent='Не удалось выполнить действие';}finally{busy=false}}
 let connectionTimer=null,connectionStartedAt=0,connectionStage='Подключаемся к игровому серверу';
@@ -423,7 +428,7 @@ $('bjStand').addEventListener('click',()=>{if(bj&&bj.hidden)finishBJ();});
 const oldUpdateDisplay=updateDisplay;
 updateDisplay=function(){oldUpdateDisplay();if($('betBalance'))betBalance();};
 const tapButton=$('tapButton');
-tapButton.addEventListener('click',e=>{const r=tapButton.getBoundingClientRect(),el=document.createElement('span');el.className='tap-float';el.textContent='+'+money(game?.player?.tapReward||300)+' ₽';el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+20)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),900);});
+tapButton.addEventListener('click',e=>{e.preventDefault();const r=tapButton.getBoundingClientRect(),el=document.createElement('span');el.className='tap-float';el.textContent='+'+money(game?.player?.tapReward||50)+' ₽';el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+20)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),650);},{passive:false});
 
 
 
