@@ -379,10 +379,7 @@ async function refresh(){
  game=normalizeGameState(await api('/game/state'));
  if(!demoMode){
   const data=await api('/market/state');
-  marketPrices=Object.fromEntries(data.market.assets.map(a=>[a.id,Number(a.price)]));
-  marketChanges=Object.fromEntries(data.market.assets.map(a=>[a.id,0]));
-  marketPortfolio=data.market.portfolio||{};
-  marketUpdatedAt=data.market.updatedAt||null;
+  applyMarketSnapshot(data.market);
  }
  renderAll();
 }
@@ -644,23 +641,29 @@ const MARKET_ASSETS=[
  {id:'msft',name:'Microsoft',ticker:'MSFT',icon:'🪟',price:41500,group:'Акции'}
 ];
 const MARKET_KEY='crypto-investor-market-demo-v1';
-let marketPrices={},marketChanges={},marketPortfolio={},marketJoined={},marketUpdatedAt=null;
+let marketPrices={},marketChanges={},marketChangeValues={},marketPortfolio={},marketJoined={},marketUpdatedAt=null;
+function applyMarketSnapshot(market){
+ const assets=Array.isArray(market?.assets)?market.assets:[];
+ marketPrices=Object.fromEntries(assets.map(a=>[a.id,Number(a.price)]));
+ marketChanges=Object.fromEntries(assets.map(a=>[a.id,Number(a.changePercent)||0]));
+ marketChangeValues=Object.fromEntries(assets.map(a=>[a.id,Number(a.changeValue)||0]));
+ marketPortfolio=market?.portfolio||{};
+ marketUpdatedAt=market?.updatedAt||null;
+}
 function loadMarketDemo(){
  try{const v=JSON.parse(localStorage.getItem(MARKET_KEY)||'{}');marketPortfolio=v.portfolio||{};marketJoined=v.joined||{};}catch{marketPortfolio={};marketJoined={};}
- MARKET_ASSETS.forEach(a=>{marketPrices[a.id]=a.price;marketChanges[a.id]=0;});
+ MARKET_ASSETS.forEach(a=>{marketPrices[a.id]=a.price;marketChanges[a.id]=0;marketChangeValues[a.id]=0;});
 }
 function saveMarketDemo(){try{localStorage.setItem(MARKET_KEY,JSON.stringify({portfolio:marketPortfolio,joined:marketJoined}));}catch{}}
 async function refreshMarketPrices(){
  const button=$('exchangeRefresh');if(button)button.disabled=true;
  try{
   if(demoMode){
-   MARKET_ASSETS.forEach(a=>{const change=(Math.random()*0.05)-0.025;marketPrices[a.id]=Math.max(.01,(marketPrices[a.id]||a.price)*(1+change));marketChanges[a.id]=change*100;});
+   MARKET_ASSETS.forEach(a=>{const previous=marketPrices[a.id]||a.price;const change=(Math.random()*0.05)-0.025;marketPrices[a.id]=Math.max(.01,previous*(1+change));marketChanges[a.id]=change*100;marketChangeValues[a.id]=marketPrices[a.id]-previous;});
    $('exchangeUpdated').textContent='Локальный просмотр котировок. Для общего портфеля открой игру через Telegram.';
   }else{
    const data=await api('/market/state');
-   marketPrices=Object.fromEntries(data.market.assets.map(a=>[a.id,Number(a.price)]));
-   marketChanges=Object.fromEntries(data.market.assets.map(a=>[a.id,0]));
-   marketPortfolio=data.market.portfolio||{};marketUpdatedAt=data.market.updatedAt||null;
+   applyMarketSnapshot(data.market);
    game=normalizeGameState(data.state);
    $('exchangeUpdated').textContent='Котировки обновлены: '+new Date(marketUpdatedAt||Date.now()).toLocaleTimeString('ru-RU');
    renderAll();
@@ -672,7 +675,7 @@ async function refreshMarketPrices(){
 function renderMarket(){
  if(!$('marketGrid'))return;
  $('exchangeBalance').textContent=money(game?.player?.balance||0)+' ₽';
- $('marketGrid').innerHTML=MARKET_ASSETS.map(a=>{const price=marketPrices[a.id]||a.price,change=marketChanges[a.id]||0;return '<article class="market-card"><div class="market-card-top"><span class="market-icon">'+a.icon+'</span><span class="market-group">'+a.group+'</span></div><h3>'+a.name+'</h3><b class="market-ticker">'+a.ticker+'</b><div class="market-price">'+money(price)+' ₽</div><small class="'+(change>=0?'market-up':'market-down')+'">'+(change>=0?'▲ +':'▼ ')+change.toFixed(2)+'%</small></article>';}).join('');
+ $('marketGrid').innerHTML=MARKET_ASSETS.map(a=>{const price=marketPrices[a.id]||a.price,change=marketChanges[a.id]||0,changeValue=marketChangeValues[a.id]||0;const sign=changeValue>0?'+':changeValue<0?'−':'';const arrow=changeValue>0?'▲':changeValue<0?'▼':'•';return '<article class="market-card"><div class="market-card-top"><span class="market-icon">'+a.icon+'</span><span class="market-group">'+a.group+'</span></div><h3>'+a.name+'</h3><b class="market-ticker">'+a.ticker+'</b><div class="market-price">'+money(price)+' ₽</div><small class="'+(change>=0?'market-up':'market-down')+'">'+arrow+' '+sign+money(Math.abs(changeValue))+' ₽ · '+(change>=0?'+':'')+change.toFixed(2)+'% за минуту</small></article>';}).join('');
  const select=$('marketAsset'),previous=select.value;
  select.innerHTML=MARKET_ASSETS.map(a=>'<option value="'+a.id+'">'+a.name+' ('+a.ticker+')</option>').join('');
  if(MARKET_ASSETS.some(a=>a.id===previous))select.value=previous;
@@ -686,7 +689,7 @@ function renderMarketEstimate(){
 function renderMarketHoldings(){
  const root=$('marketHoldings');if(!root)return;
  const entries=Object.entries(marketPortfolio).filter(([,q])=>Number(q)>0);
- root.innerHTML=entries.length?entries.map(([id,q])=>{const a=MARKET_ASSETS.find(x=>x.id===id);return a?'<article class="holding-row"><span>'+a.icon+' '+a.name+' ('+a.ticker+')</span><b>'+Number(q).toFixed(4)+'</b><strong>'+money((marketPrices[id]||a.price)*q)+' ₽</strong><button class="shop-sell" type="button" data-market-sell="'+id+'">Продать всё</button></article>':''}).join(''):'<p class="muted empty-garage">Портфель пока пуст. Купи активы на вкладке «Биржа» — они появятся здесь.</p>';
+ root.innerHTML=entries.length?entries.map(([id,q])=>{const a=MARKET_ASSETS.find(x=>x.id===id);if(!a)return '';const qty=Number(q),change=Number(marketChanges[id]||0),changeValue=Number(marketChangeValues[id]||0)*qty,sign=changeValue>0?'+':changeValue<0?'−':'';return '<article class="holding-row"><span>'+a.icon+' '+a.name+' ('+a.ticker+')</span><b>'+qty.toFixed(4)+'</b><strong>'+money((marketPrices[id]||a.price)*qty)+' ₽<small class="'+(change>=0?'market-up':'market-down')+'">'+sign+money(Math.abs(changeValue))+' ₽ ('+(change>=0?'+':'')+change.toFixed(2)+'%) за минуту</small></strong><button class="shop-sell" type="button" data-market-sell="'+id+'">Продать всё</button></article>';}).join(''):'<p class="muted empty-garage">Портфель пока пуст. Купи активы на вкладке «Биржа» — они появятся здесь.</p>';
 }
 async function marketTrade(side){
  const status=$('marketStatus'),a=MARKET_ASSETS.find(x=>x.id===$('marketAsset').value),qty=Number($('marketQuantity').value);
@@ -706,7 +709,7 @@ async function marketTrade(side){
  const buttons=[$('marketBuy'),$('marketSell')];buttons.forEach(b=>b.disabled=true);status.textContent='Проводим операцию на сервере…';
  try{
   const result=await api('/market/trade',{assetId:a.id,side,quantity:qty});
-  game=normalizeGameState(result.state);marketPrices=Object.fromEntries(result.market.assets.map(x=>[x.id,Number(x.price)]));marketPortfolio=result.market.portfolio||{};marketUpdatedAt=result.market.updatedAt||null;
+  game=normalizeGameState(result.state);applyMarketSnapshot(result.market);
   const trade=result.trade;
   status.textContent=(side==='buy'?'Куплено ':'Продано ')+trade.quantity+' '+a.ticker+' по '+money(trade.price)+' ₽. Сумма: '+money(trade.total)+' ₽.';
   renderAll();renderMarket();
