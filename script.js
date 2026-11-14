@@ -737,6 +737,7 @@ function renderCaseReel(){
  track.innerHTML=reel.map(item=>'<div class="case-reel-item"><span>'+item.icon+'</span><b>'+item.name+'</b><small>'+item.rarity+'</small></div>').join('');
  track.style.transition='none';track.style.transform='translateX(0)';
 }
+const openCaseButton=$('openCaseButton');
 if(openCaseButton)openCaseButton.addEventListener('click',async()=>{
  if(caseSpinning||busy||!game?.player)return;
  caseSpinning=true;busy=true;openCaseButton.disabled=true;
