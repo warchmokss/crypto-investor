@@ -71,10 +71,10 @@
       </div>
 
       <div class="tap-area">
-        <button id="tapButton" class="tap-button" aria-label="Получить 50 рублей">
+        <div class="tap-stage"><div id="globalTapBoost" class="global-tap-boost" hidden><strong>×2</strong><span>💵</span><small id="globalTapBoostTimer">60:00</small></div><button id="tapButton" class="tap-button" aria-label="Получить игровые рубли">
           <span class="coin">₿</span>
           <small>+50 ₽ за нажатие</small>
-        </button>
+        </button></div>
         <p id="tapMessage" class="message" aria-live="polite">Нажатие начисляет игровую валюту. Подробности — в разделе «О проекте».</p>
         <p class="counter">Всего нажатий: <b id="tapCount">0</b></p>
         <p id="saveStatus" class="save-status" aria-live="polite">Подключение к игровому серверу...</p>
