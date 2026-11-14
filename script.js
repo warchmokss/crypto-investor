@@ -1,3 +1,21 @@
+// Показываем ошибки JavaScript прямо в интерфейсе Mini App, чтобы запуск не зависал молча.
+(function installStartupDiagnostics(){
+  function showStartupError(message){
+    const status=document.getElementById('saveStatus');
+    if(status){
+      status.textContent='Ошибка запуска приложения: '+String(message||'неизвестная ошибка').slice(0,240);
+      status.style.color='#ff7777';
+      status.style.whiteSpace='normal';
+    }
+  }
+  window.addEventListener('error',event=>{
+    showStartupError(event.message||('ошибка в '+(event.filename||'скрипте')+':'+(event.lineno||'?')));
+  });
+  window.addEventListener('unhandledrejection',event=>{
+    const reason=event.reason;
+    showStartupError(reason?.message||reason||'ошибка асинхронного запуска');
+  });
+})();
 const UPGRADES = [
   { id:'tap2', name:'Усиленный тап', icon:'👆', description:'Получай 350 ₽ за каждое нажатие.', cost:100000, tap:350 },
   { id:'tap3', name:'Профессиональный тап', icon:'⚡', description:'Получай 450 ₽ за каждое нажатие.', cost:500000, tap:450 },
