@@ -628,7 +628,7 @@ const CASE_ITEMS=[
 let caseSpinning=false;
 function updateCaseUI(){
  const count=$('caseTokenCount');if(count)count.textContent=String(game?.caseTokens||0);
- if(openCaseButton){openCaseButton.disabled=caseSpinning||busy||(!game?.caseTokens&&Number(game?.player?.balance||0)<5000000);openCaseButton.textContent=caseSpinning?'Открываем…':(game?.caseTokens?'Открыть кейс · бесплатный билет':'Открыть кейс · 5 000 000 ₽');}
+ const button=$('openCaseButton');if(button){button.disabled=caseSpinning||busy||(!game?.caseTokens&&Number(game?.player?.balance||0)<5000000);button.textContent=caseSpinning?'Открываем…':(game?.caseTokens?'Открыть кейс · бесплатный билет':'Открыть кейс · 5 000 000 ₽');}
 }
 function renderCaseReel(){
  const track=$('caseReelTrack');if(!track)return;
