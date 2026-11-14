@@ -487,8 +487,8 @@ function escapeHtml(value){return String(value).replace(/[&<>"']/g,ch=>({'&':'&a
 
 document.querySelector('[data-page="leaders"]').addEventListener('click',()=>renderLeaderboard());
 document.querySelectorAll('[data-leader-type]').forEach(btn=>btn.addEventListener('click',()=>renderLeaderboard(btn.dataset.leaderType)));
-// Пока вкладка лидеров открыта, обновляем выбранный рейтинг каждый час.
-setInterval(()=>{if(document.getElementById('leaders')?.classList.contains('active'))renderLeaderboard();},60*60*1000);
+// Пока вкладка лидеров открыта, обновляем выбранный рейтинг каждые 5 минут.
+setInterval(()=>{if(document.getElementById('leaders')?.classList.contains('active'))renderLeaderboard();},5*60*1000);
 
 // Мягко падающие золотые звёзды по краям фонового биткоина.
 (function makeGoldStars(){const layer=$('goldStars');if(!layer)return;for(let i=0;i<24;i++){const star=document.createElement('i');star.className='gold-star';star.textContent='✦';star.style.left=(2+Math.random()*96)+'%';star.style.animationDuration=(9+Math.random()*15)+'s';star.style.animationDelay=(-Math.random()*20)+'s';star.style.fontSize=(8+Math.random()*15)+'px';star.style.opacity=(.12+Math.random()*.3).toFixed(2);layer.appendChild(star);}})();
