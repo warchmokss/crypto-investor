@@ -179,12 +179,80 @@
       </div>
     </section>
 
+
+    <section id="exchange" class="page">
+      <div class="hero">
+        <p class="eyebrow">ДЕМО-ФОНДОВАЯ БИРЖА</p>
+        <h1>Игровая <span>биржа</span></h1>
+        <p class="muted">Покупай и продавай виртуальные акции, криптоактивы и валюту за игровые рубли. Котировки учебные и меняются только в демо-режиме.</p>
+      </div>
+      <div class="section-balance">Игровой баланс: <b id="exchangeBalance">0 ₽</b></div>
+      <div class="exchange-toolbar">
+        <span class="demo-pill">ДЕМО · НЕ РЕАЛЬНЫЕ КОТИРОВКИ</span>
+        <button class="category-btn" id="exchangeRefresh" type="button">↻ Обновить котировки</button>
+      </div>
+      <p class="muted exchange-updated" id="exchangeUpdated">Котировки ещё не обновлялись.</p>
+      <div class="market-grid" id="marketGrid"></div>
+      <div class="exchange-card market-trade">
+        <h2>Моя сделка</h2>
+        <label class="game-label" for="marketAsset">Актив</label>
+        <select class="exchange-select" id="marketAsset"></select>
+        <label class="game-label" for="marketQuantity">Количество</label>
+        <input class="exchange-input" id="marketQuantity" type="number" min="0.0001" step="0.0001" value="1">
+        <p class="muted" id="marketEstimate">Выбери актив и количество.</p>
+        <div class="market-actions">
+          <button class="game-action" id="marketBuy" type="button">Купить</button>
+          <button class="game-action secondary" id="marketSell" type="button">Продать</button>
+        </div>
+        <p class="game-result" id="marketStatus" aria-live="polite">Все операции выполняются только за виртуальные рубли.</p>
+      </div>
+      <h2>Мой портфель</h2>
+      <div class="market-holdings" id="marketHoldings"></div>
+      <p class="game-disclaimer">Это учебная игровая механика. Цены условные, не связаны с реальными биржами. Здесь нельзя купить настоящие акции, криптовалюту или валюту и нельзя вывести средства.</p>
+    </section>
+
+    <section id="tournaments" class="page">
+      <div class="hero">
+        <p class="eyebrow">СОРЕВНОВАНИЯ ИГРОКОВ</p>
+        <h1>Игровые <span>турниры</span></h1>
+        <p class="muted">Участвуй в демо-соревнованиях, выполняй задания и сравнивай результаты с другими игроками.</p>
+      </div>
+      <div class="tournament-grid">
+        <article class="tournament-card">
+          <div class="tournament-icon">👆</div><span class="demo-pill">ДЕМО-ТУРНИР</span>
+          <h2>Марафон тапов</h2><p>Набери больше нажатий за время турнира.</p>
+          <b id="tapTournamentScore">Твой результат: 0 тапов</b>
+          <button class="game-action tournament-join" data-tournament="taps" type="button">Участвовать</button>
+          <small id="tapTournamentStatus">Участие пока не начато.</small>
+        </article>
+        <article class="tournament-card">
+          <div class="tournament-icon">🏢</div><span class="demo-pill">ДЕМО-ТУРНИР</span>
+          <h2>Бизнес-магнат</h2><p>Развивай имущество и сравнивай стоимость своей империи.</p>
+          <b id="assetTournamentScore">Твой результат: 0 объектов</b>
+          <button class="game-action tournament-join" data-tournament="assets" type="button">Участвовать</button>
+          <small id="assetTournamentStatus">Участие пока не начато.</small>
+        </article>
+        <article class="tournament-card">
+          <div class="tournament-icon">💰</div><span class="demo-pill">ДЕМО-ТУРНИР</span>
+          <h2>Капиталист</h2><p>Покажи самый высокий игровой баланс.</p>
+          <b id="balanceTournamentScore">Твой результат: 0 ₽</b>
+          <button class="game-action tournament-join" data-tournament="balance" type="button">Участвовать</button>
+          <small id="balanceTournamentStatus">Участие пока не начато.</small>
+        </article>
+      </div>
+      <div class="exchange-card tournament-leaderboard">
+        <h2>🏆 Демо-рейтинг турниров</h2>
+        <div id="tournamentLeaderboard" class="leaderboard-list"></div>
+      </div>
+      <p class="game-disclaimer">Турниры демонстрационные: без денежных и виртуальных ставок, без потери баланса и без реальных призов.</p>
+    </section>
+
     <section id="about" class="page">
       <div class="hero">
         <p class="eyebrow">ДОПОЛНИТЕЛЬНЫЕ РАЗДЕЛЫ</p>
         <div class="more-links">
           <button class="nav-btn" data-page="upgrade">⚡ Апгрейды</button><button class="nav-btn" data-page="bets">🪙 Игры</button>
-          <button class="nav-btn" data-page="leaders">🏆 Лидеры</button>
+          <button class="nav-btn" data-page="leaders">🏆 Лидеры</button><button class="nav-btn" data-page="exchange">📈 Биржа</button><button class="nav-btn" data-page="tournaments">🏆 Турниры</button>
         </div>
         <h1>О проекте <span>CRYPTO INVESTOR</span></h1>
         <p class="muted">CRYPTO INVESTOR — игровой симулятор управления виртуальным капиталом. Здесь можно получать игровую валюту, приобретать игровые активы и отслеживать развитие своего профиля.</p>
