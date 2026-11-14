@@ -302,6 +302,36 @@ app.post('/api/telegram/webhook', async (req,res) => {
     const resetBalance = text.match(/^\/resetbalance(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})$/i);
     const ban = text.match(/^\/ban(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})\s+(навсегда|forever|permanent|\d{1,4}[mhdw])(?:\s+(.+))?$/i);
     const unban = text.match(/^\/unban(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})$/i);
+    const resetAllProgress = /^\/resetallprogress(?:@\w+)?$/i.test(text);
+    if (resetAllProgress) {
+      if (adminRole !== 'owner') {
+        await sendBotMessage(chatId, 'Полный сброс доступен только главному администратору.');
+        return;
+      }
+      const result = await transaction(async c => {
+        const assets = await c.query('DELETE FROM player_assets');
+        const upgrades = await c.query('DELETE FROM player_upgrades');
+        const claims = await c.query('DELETE FROM player_crossword_claims');
+        const players = await c.query(
+          'UPDATE players SET balance=0,taps=0,tap_reward=300,last_income_at=NOW(),updated_at=NOW() RETURNING telegram_id'
+        );
+        return {
+          players: players.rowCount,
+          assets: assets.rowCount,
+          upgrades: upgrades.rowCount,
+          claims: claims.rowCount
+        };
+      });
+      await sendBotMessage(chatId,
+        'Полный сброс выполнен. Аккаунты и авторизация сохранены.\\n' +
+        'Игроков сброшено: ' + result.players + '.\\n' +
+        'Удалено активов: ' + result.assets + '.\\n' +
+        'Сброшено улучшений: ' + result.upgrades + '.\\n' +
+        'Сброшено отметок кроссворда: ' + result.claims + '.\\n' +
+        'Баланс: 0 ₽, тап: 300 ₽, прогресс уровней: 0.'
+      );
+      return;
+    }
     if (resetBalance || ban || unban) {
       if (adminRole !== 'owner') {
         await sendBotMessage(chatId, 'Эта команда доступна только главному администратору.');
@@ -380,7 +410,7 @@ if (TELEGRAM_WEBHOOK_SECRET) {
       {command:'start',description:'Открыть CRYPTO INVESTOR'},
       {command:'give',description:'Начислить игровые рубли'},
       {command:'balance',description:'Посмотреть баланс игрока'},
-      {command:'resetbalance',description:'Обнулить баланс игрока (главный админ)'},
+      {command:'resetbalance',description:'Обнулить баланс игрока (главный админ)'},\n      {command:'resetallprogress',description:'Полный сброс прогресса всех игроков'},
       {command:'ban',description:'Заблокировать аккаунт (главный админ)'},
       {command:'unban',description:'Разблокировать аккаунт (главный админ)'},
       {command:'help',description:'Помощь по командам'}
