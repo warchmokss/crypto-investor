@@ -539,26 +539,6 @@ tapButton.addEventListener('click',e=>{e.preventDefault();const r=tapButton.getB
 
 
 
-// Словесные кроссворды: наборы подсказок перемешиваются для каждого раунда.
-const crosswordBank={
- easy:[
-  [{w:'КОШКА',h:'Домашнее животное, которое мурлычет.'},{w:'ЯБЛОКО',h:'Круглый фрукт, растёт на дереве.'},{w:'ЗИМА',h:'Самое холодное время года.'},{w:'МОРЕ',h:'Большой солёный водоём.'}],
-  [{w:'СОЛНЦЕ',h:'Звезда, которая освещает Землю.'},{w:'КНИГА',h:'Её читают, перелистывая страницы.'},{w:'РЫБА',h:'Живёт в воде и дышит жабрами.'},{w:'ЛИМОН',h:'Жёлтый кислый цитрус.'}],
-  [{w:'ШКОЛА',h:'Место, куда дети ходят учиться.'},{w:'СНЕГ',h:'Белые холодные хлопья зимой.'},{w:'ГРИБ',h:'Растёт в лесу, у него есть шляпка.'},{w:'ОКНО',h:'Через него смотрят на улицу.'}]
- ],
- medium:[
-  [{w:'КОМПАС',h:'Прибор, который помогает определить стороны света.'},{w:'ПЛАНЕТА',h:'Небесное тело, вращающееся вокруг звезды.'},{w:'РАДУГА',h:'Цветная дуга после дождя.'},{w:'ПИРАМИДА',h:'Геометрическое тело с многоугольным основанием.'},{w:'ЛАБИРИНТ',h:'Запутанная система ходов, из которой ищут выход.'}],
-  [{w:'ТЕЛЕСКОП',h:'Оптический прибор для наблюдения за далёкими объектами.'},{w:'БИБЛИОТЕКА',h:'Учреждение, где хранят и выдают книги.'},{w:'ВУЛКАН',h:'Гора, из которой может извергаться лава.'},{w:'МОЛЕКУЛА',h:'Наименьшая частица вещества, сохраняющая его свойства.'},{w:'ОРБИТА',h:'Траектория движения небесного тела.'}],
-  [{w:'АРХИПЕЛАГ',h:'Группа островов, расположенных рядом.'},{w:'ГРАВИТАЦИЯ',h:'Сила притяжения между телами.'},{w:'ЭКВАТОР',h:'Воображаемая линия вокруг середины Земли.'},{w:'МЕТЕОРИТ',h:'Космическое тело, достигшее поверхности Земли.'},{w:'КРИСТАЛЛ',h:'Твёрдое тело с упорядоченной внутренней структурой.'}]
- ]
-};
-let crosswordLevel='easy', crosswordPuzzle=[], crosswordSolved=false;
-const CROSSWORD_COOLDOWN=10*60*1000, crosswordKey='ci-crossword-next-reward';
-function newCrossword(){const packs=crosswordBank[crosswordLevel],pack=packs[Math.floor(Math.random()*packs.length)];crosswordPuzzle=pack.map(x=>({...x}));crosswordSolved=false;$('crosswordTitle').textContent=crosswordLevel==='easy'?'🟢 Лёгкий уровень':'🟡 Средний уровень';$('crosswordClues').innerHTML=crosswordPuzzle.map((x,i)=>`<label class="crossword-clue"><span><b>${i+1}.</b> ${x.h}<small>${x.w.length} букв</small></span><input data-cross-answer="${i}" maxlength="${x.w.length}" autocomplete="off" spellcheck="false" placeholder="Ответ"></label>`).join('');$('crosswordResult').textContent='Впиши ответы и нажми «Проверить ответы».';const wait=Math.max(0,Number(localStorage.getItem(crosswordKey)||0)-Date.now());$('crosswordCheck').disabled=wait>0;$('crosswordHelp').textContent=wait>0?`Следующая награда будет доступна через ${Math.ceil(wait/60000)} мин.`:'За полностью решённый кроссворд — 5 000 ₽.';}
-function setCrosswordLevel(level){crosswordLevel=level;document.querySelectorAll('[data-cross-level]').forEach(b=>b.classList.toggle('active',b.dataset.crossLevel===level));newCrossword();}
-document.querySelectorAll('[data-cross-level]').forEach(b=>b.addEventListener('click',()=>setCrosswordLevel(b.dataset.crossLevel)));
-$('crosswordCheck').addEventListener('click',async()=>{if(crosswordSolved)return;const wait=Math.max(0,Number(localStorage.getItem(crosswordKey)||0)-Date.now());if(wait>0){$('crosswordResult').textContent=`Награда уже получена. Подожди ещё ${Math.ceil(wait/60000)} мин.`;return;}let correct=0;crosswordPuzzle.forEach((x,i)=>{const input=$(`[data-cross-answer="${i}"]`);const answer=input.value.toLocaleUpperCase('ru-RU').replace(/Ё/g,'Е').replace(/[^А-Я]/g,'');if(answer===x.w.replace(/Ё/g,'Е')){correct++;input.classList.add('correct-answer');input.disabled=true;}else{input.classList.add('wrong-answer');}});if(correct===crosswordPuzzle.length){try{if(demoMode){game.player.balance+=5000;saveDemo();localStorage.setItem(crosswordKey,String(Date.now()+CROSSWORD_COOLDOWN));}else{game=await api('/game/crossword-reward',{level:crosswordLevel,answers:crosswordPuzzle.map(x=>x.w)});}crosswordSolved=true;renderAll();$('crosswordBalance').textContent=money(game.player.balance)+' ₽';$('crosswordResult').textContent='🎉 Отлично! Все ответы верны. Начислено 5 000 ₽.';$('crosswordCheck').disabled=true;}catch(err){$('crosswordResult').textContent=err.message||'Не удалось начислить награду.';$('crosswordCheck').disabled=true;}}else $('crosswordResult').textContent=`Правильно: ${correct} из ${crosswordPuzzle.length}. Исправь выделенные ответы и попробуй ещё раз.`;});
-$('crosswordNew').addEventListener('click',()=>newCrossword());
 $('transferSend').addEventListener('click',async()=>{const username=$('transferUsername').value.trim().replace(/^@/,'');const amount=Math.floor(Number($('transferAmount').value));const status=$('transferStatus');if(!/^[A-Za-z0-9_]{5,32}$/.test(username)){status.textContent='Введи корректный Telegram username (5–32 символа).';return;}if(!Number.isSafeInteger(amount)||amount<1){status.textContent='Укажи целую сумму больше нуля.';return;}if(!game||amount>game.player.balance){status.textContent='Недостаточно игровых рублей.';return;}if(demoMode){status.textContent='Переводы между пользователями доступны только в опубликованной Telegram Mini App с подключённым сервером. В локальном предпросмотре получателя проверить нельзя.';return;}const btn=$('transferSend');btn.disabled=true;status.textContent='Выполняется перевод…';try{const result=await api('/game/transfer',{username,amount});game=result.state;renderAll();$('transferBalance').textContent=money(game.player.balance)+' ₽';status.textContent=`Перевод ${money(amount)} ₽ пользователю @${result.recipient} выполнен.`;$('transferAmount').value='';}catch(e){status.textContent=e.message||'Не удалось выполнить перевод.';}finally{btn.disabled=false;}});
  $('referralCopy').addEventListener('click',async()=>{
   const button=$('referralCopy'),status=$('referralStatus');
@@ -575,7 +555,7 @@ $('transferSend').addEventListener('click',async()=>{const username=$('transferU
   }catch(e){status.textContent=e.message||'Не удалось создать ссылку.';}
   finally{button.disabled=false;}
  });
-document.querySelector('[data-page="crosswords"]').addEventListener('click',()=>{$('crosswordBalance').textContent=money(game?.player?.balance||0)+' ₽';if(!crosswordPuzzle.length)newCrossword();});
+
 document.querySelector('[data-page="transfers"]').addEventListener('click',async()=>{
  if(!demoMode&&token){try{await refresh();const info=await api('/referral/link');$('referralCount').textContent='Приглашённых друзей: '+Number(info.invitedCount||0);}catch{}}
  $('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';
