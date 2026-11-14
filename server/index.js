@@ -17,7 +17,7 @@ import { UPGRADES, ASSETS, ALL_ASSETS, getIncome } from './catalog.js';
 const { Pool } = pg;
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PG_POOL_MAX || 20), idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
-const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS player_market_holdings (telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, quantity NUMERIC(24,8) NOT NULL CHECK(quantity > 0), average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,asset_id))`),pool.query('ALTER TABLE player_market_holdings ADD COLUMN IF NOT EXISTS average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0'),pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`),pool.query(`CREATE TABLE IF NOT EXISTS player_case_tokens (telegram_id TEXT PRIMARY KEY, tokens INTEGER NOT NULL DEFAULT 0 CHECK(tokens >= 0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_starter_claims (telegram_id TEXT PRIMARY KEY, claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_unique_items (telegram_id TEXT NOT NULL, item_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity > 0), PRIMARY KEY(telegram_id,item_id))`) ]);
+const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS player_market_holdings (telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, quantity NUMERIC(24,8) NOT NULL CHECK(quantity > 0), average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,asset_id))`),,pool.query(`CREATE TABLE IF NOT EXISTS player_market_trades (id BIGSERIAL PRIMARY KEY, telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, side TEXT NOT NULL CHECK(side IN ('buy','sell')), quantity NUMERIC(24,8) NOT NULL, price NUMERIC(24,8) NOT NULL, total BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)pool.query('ALTER TABLE player_market_holdings ADD COLUMN IF NOT EXISTS average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0'),pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`),pool.query(`CREATE TABLE IF NOT EXISTS player_case_tokens (telegram_id TEXT PRIMARY KEY, tokens INTEGER NOT NULL DEFAULT 0 CHECK(tokens >= 0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_starter_claims (telegram_id TEXT PRIMARY KEY, claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_unique_items (telegram_id TEXT NOT NULL, item_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity > 0), PRIMARY KEY(telegram_id,item_id))`) ]);
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 2, enableReadyCheck: true }) : null;
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -166,10 +166,13 @@ app.get('/api/market/state',auth,async(req,res,next)=>{try{
  await bansReady;
  const result=await transaction(async c=>{
   const state=await getState(c,req.playerId);
-  const holdings=await c.query('SELECT asset_id,quantity,average_buy_price FROM player_market_holdings WHERE telegram_id=$1',[req.playerId]);
-  return {state,portfolio:Object.fromEntries(holdings.rows.map(row=>[row.asset_id,{quantity:Number(row.quantity),averageBuyPrice:Number(row.average_buy_price)}]))};
+  const [holdings,history]=await Promise.all([
+   c.query('SELECT asset_id,quantity,average_buy_price FROM player_market_holdings WHERE telegram_id=$1',[req.playerId]),
+   c.query('SELECT asset_id,side,quantity,price,total,created_at FROM player_market_trades WHERE telegram_id=$1 ORDER BY created_at DESC,id DESC LIMIT 100',[req.playerId])
+  ]);
+  return {state,portfolio:Object.fromEntries(holdings.rows.map(row=>[row.asset_id,{quantity:Number(row.quantity),averageBuyPrice:Number(row.average_buy_price)}])),history:history.rows};
  });
- res.json({market:{...getMarketSnapshot(),portfolio:result.portfolio},state:result.state});
+ res.json({market:{...getMarketSnapshot(),portfolio:result.portfolio,history:result.history},state:result.state});
 }catch(e){next(e)}});
 app.post('/api/market/trade',auth,async(req,res,next)=>{try{
  await bansReady;
@@ -197,13 +200,15 @@ app.post('/api/market/trade',auth,async(req,res,next)=>{try{
    else await c.query('UPDATE player_market_holdings SET quantity=$3,updated_at=NOW() WHERE telegram_id=$1 AND asset_id=$2',[req.playerId,asset.id,remaining]);
    await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,total]);
   }
-  const [state,holdings]=await Promise.all([
+  await c.query('INSERT INTO player_market_trades(telegram_id,asset_id,side,quantity,price,total) VALUES($1,$2,$3,$4,$5,$6)',[req.playerId,asset.id,side,quantity,quote.price,total]);
+  const [state,holdings,history]=await Promise.all([
    getState(c,req.playerId,false),
-   c.query('SELECT asset_id,quantity FROM player_market_holdings WHERE telegram_id=$1',[req.playerId])
+   c.query('SELECT asset_id,quantity,average_buy_price FROM player_market_holdings WHERE telegram_id=$1',[req.playerId]),
+   c.query('SELECT asset_id,side,quantity,price,total,created_at FROM player_market_trades WHERE telegram_id=$1 ORDER BY created_at DESC,id DESC LIMIT 100',[req.playerId])
   ]);
-  return {state,portfolio:Object.fromEntries(holdings.rows.map(row=>[row.asset_id,Number(row.quantity)]))};
+  return {state,portfolio:Object.fromEntries(holdings.rows.map(row=>[row.asset_id,{quantity:Number(row.quantity),averageBuyPrice:Number(row.average_buy_price)}])),history:history.rows};
  });
- res.json({state:result.state,market:{...snapshot,portfolio:result.portfolio},trade:{assetId:asset.id,side,quantity,price:quote.price,total}});
+ res.json({state:result.state,market:{...snapshot,portfolio:result.portfolio,history:result.history},trade:{assetId:asset.id,side,quantity,price:quote.price,total}});
 }catch(e){next(e)}});
 
 const CASE_ITEMS = Object.freeze([
