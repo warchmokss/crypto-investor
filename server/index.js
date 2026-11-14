@@ -95,8 +95,25 @@ app.post('/api/auth/telegram', async (req,res,next)=>{ try {
   res.json({ token:makeSession(user) });
  } catch(e){next(Object.assign(e,{status:401}));} });
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
+function levelForTaps(taps){
+ let level=1,nextThreshold=100,step=150,total=0;
+ while(level<999&&taps>=nextThreshold){total=nextThreshold;level++;nextThreshold+=step;step+=50;}
+ return {level,progress:Math.max(0,taps-total),needed:100+(level-1)*50};
+}
 app.post('/api/game/tap',auth,async(req,res,next)=>{try{
- const state=await transaction(async c=>{const s=await getState(c,req.playerId);const result=await c.query('UPDATE players SET taps=taps+1,balance=balance+tap_reward+CASE WHEN (taps+1)%100=0 THEN 500 ELSE 0 END,updated_at=NOW() WHERE telegram_id=$1 RETURNING balance,taps,tap_reward',[req.playerId]);s.player.balance=Number(result.rows[0].balance);s.player.taps=Number(result.rows[0].taps);return {...s,bonus:s.player.taps%100===0?500:0};});res.json(state);
+ const state=await transaction(async c=>{
+  const s=await getState(c,req.playerId);
+  const oldLevel=levelForTaps(Number(s.player.taps||0)).level;
+  const result=await c.query('UPDATE players SET taps=taps+1,balance=balance+tap_reward+CASE WHEN (taps+1)%100=0 THEN 500 ELSE 0 END,updated_at=NOW() WHERE telegram_id=$1 RETURNING balance,taps,tap_reward',[req.playerId]);
+  const newLevel=levelForTaps(Number(result.rows[0].taps)).level;
+  const levelReward=Math.max(0,newLevel-oldLevel)*25000;
+  if(levelReward) await c.query('UPDATE players SET balance=balance+$2 WHERE telegram_id=$1',[req.playerId,levelReward]);
+  s.player.balance=Number(result.rows[0].balance)+levelReward;
+  s.player.taps=Number(result.rows[0].taps);
+  s.player.tapReward=Number(result.rows[0].tap_reward);
+  return {...s,bonus:s.player.taps%100===0?500:0,levelReward};
+ });
+ res.json(state);
  }catch(e){next(e)}});
 app.post('/api/game/crossword-reward',auth,async(req,res,next)=>{try{const level=req.body?.level;const answers=req.body?.answers;const easy=new Set(['КОШКА','ЯБЛОКО','ЗИМА','МОРЕ','СОЛНЦЕ','КНИГА','РЫБА','ЛИМОН','ШКОЛА','СНЕГ','ГРИБ','ОКНО']);const medium=new Set(['КОМПАС','ПЛАНЕТА','РАДУГА','ПИРАМИДА','ЛАБИРИНТ','ТЕЛЕСКОП','БИБЛИОТЕКА','ВУЛКАН','МОЛЕКУЛА','ОРБИТА','АРХИПЕЛАГ','ГРАВИТАЦИЯ','ЭКВАТОР','МЕТЕОРИТ','КРИСТАЛЛ']);const allowed=level==='easy'?easy:level==='medium'?medium:null;const expected=level==='easy'?4:5;if(!allowed||!Array.isArray(answers)||answers.length!==expected||answers.some(x=>typeof x!=='string'||!allowed.has(x)))throw Object.assign(new Error('Ответы кроссворда не прошли проверку'),{status:400});const state=await transaction(async c=>{const prev=(await c.query('SELECT last_claim_at FROM player_crossword_claims WHERE telegram_id=$1 FOR UPDATE',[req.playerId])).rows[0];if(prev&&Date.now()-new Date(prev.last_claim_at).getTime()<600000)throw Object.assign(new Error('Следующая награда будет доступна через 10 минут после прошлого кроссворда.'),{status:429});await c.query('UPDATE players SET balance=balance+5000,updated_at=NOW() WHERE telegram_id=$1',[req.playerId]);await c.query('INSERT INTO player_crossword_claims(telegram_id,last_claim_at) VALUES($1,NOW()) ON CONFLICT(telegram_id) DO UPDATE SET last_claim_at=NOW()',[req.playerId]);return getState(c,req.playerId,false)});res.json(state);}catch(e){next(e)}});
 app.post('/api/game/transfer',auth,async(req,res,next)=>{try{const username=String(req.body?.username||'').replace(/^@/,'').trim();const amount=Number(req.body?.amount);if(!/^[A-Za-z0-9_]{5,32}$/.test(username)||!Number.isSafeInteger(amount)||amount<1||amount>1000000000)throw Object.assign(new Error('Проверь username и сумму перевода'),{status:400});const result=await transaction(async c=>{const recipient=(await c.query('SELECT telegram_id,username FROM players WHERE lower(username)=lower($1)',[username])).rows[0];if(!recipient)throw Object.assign(new Error('Игрок с таким username не найден. Он должен хотя бы один раз открыть приложение.'),{status:404});if(String(recipient.telegram_id)===String(req.playerId))throw Object.assign(new Error('Нельзя переводить самому себе'),{status:400});const debit=await c.query('UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1 AND balance >= $2 RETURNING balance',[req.playerId,amount]);if(!debit.rowCount)throw Object.assign(new Error('Недостаточно средств'),{status:400});await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[recipient.telegram_id,amount]);await c.query('INSERT INTO player_transfers(sender_id,recipient_id,amount) VALUES($1,$2,$3)',[req.playerId,recipient.telegram_id,amount]);const state=await getState(c,req.playerId,false);return {state,recipient:recipient.username||username};});res.json(result);}catch(e){next(e)}});
