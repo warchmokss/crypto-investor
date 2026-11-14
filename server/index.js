@@ -17,7 +17,7 @@ import { UPGRADES, ASSETS, ALL_ASSETS, getIncome } from './catalog.js';
 const { Pool } = pg;
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PG_POOL_MAX || 20), idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
-const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_guess_number_claims (telegram_id TEXT PRIMARY KEY, last_play_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`)]);
+const bansReady = pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
 const redis = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 2, enableReadyCheck: true }) : null;
 const PORT = Number(process.env.PORT || 3000);
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -122,15 +122,9 @@ app.post('/api/game/guess-number',auth,async(req,res,next)=>{try{
  if(!Number.isInteger(guess)||guess<1||guess>5)throw Object.assign(new Error('Выбери целое число от 1 до 5.'),{status:400});
  const result=await transaction(async c=>{
   await getState(c,req.playerId,false);
-  const previous=(await c.query('SELECT last_play_at FROM player_guess_number_claims WHERE telegram_id=$1 FOR UPDATE',[req.playerId])).rows[0];
-  if(previous){
-   const waitMs=600000-(Date.now()-new Date(previous.last_play_at).getTime());
-   if(waitMs>0)throw Object.assign(new Error('Следующий раунд будет доступен через '+Math.ceil(waitMs/60000)+' мин.'),{status:429});
-  }
   const number=1+Math.floor(Math.random()*5);
   const correct=guess===number;
   if(correct)await c.query('UPDATE players SET balance=balance+10000,updated_at=NOW() WHERE telegram_id=$1',[req.playerId]);
-  await c.query('INSERT INTO player_guess_number_claims(telegram_id,last_play_at) VALUES($1,NOW()) ON CONFLICT(telegram_id) DO UPDATE SET last_play_at=NOW()',[req.playerId]);
   return {state:await getState(c,req.playerId,false),number,correct,reward:correct?10000:0};
  });
  res.json(result);
