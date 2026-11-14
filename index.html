@@ -8,6 +8,35 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    // Диагностика вне основного файла: сработает даже при синтаксической ошибке script.js.
+    window.__ciMainScriptLoaded = false;
+    window.addEventListener('error', function(event) {
+      var status = document.getElementById('saveStatus');
+      if (status) {
+        status.textContent = 'Ошибка загрузки игры: ' + (event.message || 'не удалось выполнить script.js') +
+          (event.lineno ? ' (строка ' + event.lineno + ')' : '');
+        status.style.color = '#ff7777';
+      }
+    }, true);
+    window.addEventListener('unhandledrejection', function(event) {
+      var status = document.getElementById('saveStatus');
+      if (status) {
+        var reason = event.reason;
+        status.textContent = 'Ошибка запуска игры: ' + (reason && reason.message ? reason.message : String(reason || 'неизвестная ошибка'));
+        status.style.color = '#ff7777';
+      }
+    });
+    window.setTimeout(function() {
+      if (!window.__ciMainScriptLoaded) {
+        var status = document.getElementById('saveStatus');
+        if (status) {
+          status.textContent = 'Основной скрипт игры не запустился. Обнови страницу и проверь подключение.';
+          status.style.color = '#ff7777';
+        }
+      }
+    }, 7000);
+  </script>
   <title>CRYPTO INVESTOR — игровой симулятор капитала</title>
   <link rel="stylesheet" href="style.css?v=20261114-standard-case-1">
 </head>
@@ -301,6 +330,6 @@
   <div id="fireworks" class="fireworks" aria-hidden="true"></div>
   <div id="bonusPopup" class="bonus-popup" role="status" aria-live="polite"></div>
   <footer>CRYPTO INVESTOR · игровой симулятор капитала</footer>
-  <script src="script.js?v=20261114-diagnostics-3"></script>
+  <script src="script.js?v=20261114-diagnostics-4"></script>
 </body>
 </html>
