@@ -6,22 +6,18 @@
   <meta name="theme-color" content="#071326">\n  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n  <meta http-equiv="Pragma" content="no-cache">\n  <meta http-equiv="Expires" content="0">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <title>CRYPTO INVESTOR — игровой симулятор капитала</title>
-  <link rel="stylesheet" href="style.css?v=20261114-admin-panel-1">
+  <link rel="stylesheet" href="style.css?v=20261114-gold-bottom-2">
 </head>
 <body>
   <header class="topbar">
     <div class="logo">КРИПТО<span>ИМПЕРИЯ</span></div>
-    <nav>
-      <button class="nav-btn active" data-page="home">Главная</button>
-      <button class="nav-btn" data-page="about">О проекте</button>
-      <button class="nav-btn" data-page="business">Бизнес</button>
-      <button class="nav-btn" data-page="garage">Гараж</button>
-      <button class="nav-btn" data-page="upgrade">Апгрейд</button>
-      <button class="nav-btn" data-page="bets">Ставки</button>
-      <button class="nav-btn" data-page="crosswords">Кроссворды</button>
-      <button class="nav-btn" data-page="transfers">Переводы</button>
-      <button class="nav-btn" data-page="leaders">Лидеры</button>
-      <button class="nav-btn" data-page="admin" id="adminNav" hidden>Админ-панель</button>
+    <nav aria-label="Основная навигация">
+      <button class="nav-btn active" data-page="home"><span class="nav-icon">▶</span><span>Играть</span></button>
+      <button class="nav-btn" data-page="business"><span class="nav-icon">▣</span><span>Бизнес</span></button>
+      <button class="nav-btn" data-page="garage"><span class="nav-icon">⌂</span><span>Гараж</span></button>
+      <button class="nav-btn" data-page="transfers"><span class="nav-icon">♧</span><span>Друзья</span></button>
+      <button class="nav-btn" data-page="about"><span class="nav-icon">•••</span><span>Ещё</span></button>
+      <button class="nav-btn admin-nav-btn" data-page="admin" id="adminNav" hidden>Админ</button>
     </nav>
   </header>
 
@@ -32,6 +28,8 @@
         <h1>Добро пожаловать в <span>КриптоИмперию</span></h1>
         <p class="muted">Развивай виртуальный капитал: выполняй игровые действия, покупай активы и улучшения, следи за доходом и прогрессом.</p>
       </div>
+
+      <div class="level-card" aria-live="polite"><div><b id="levelName">Уровень 1</b><span id="levelProgressText">0 / 100 тапов</span></div><div class="level-track"><i id="levelProgress"></i></div></div>
 
       <div class="balance-card">
         <p class="muted">ТВОЙ БАЛАНС</p>
@@ -48,12 +46,7 @@
         <p id="saveStatus" class="save-status" aria-live="polite">Подключение к игровому серверу...</p>
       </div>
 
-      <div class="info-grid">
-        <article class="info-card">
-          <h3>💰 Бонус за 100 нажатий</h3>
-          <p>Каждое сотое нажатие приносит дополнительно <b>+500 ₽</b>. За тап начисляется 50 ₽.</p>
-        </article>
-      </div>
+      <div class="info-grid"><article class="info-card"><h3>Развивай империю</h3><p>Нажимай, повышай уровень, открывай бизнес и улучшай игровые активы.</p></article></div>
     </section>
 
     <section id="upgrade" class="page">
@@ -185,7 +178,11 @@
 
     <section id="about" class="page">
       <div class="hero">
-        <p class="eyebrow">ИНФОРМАЦИЯ ОБ ИГРЕ</p>
+        <p class="eyebrow">ДОПОЛНИТЕЛЬНЫЕ РАЗДЕЛЫ</p>
+        <div class="more-links">
+          <button class="nav-btn" data-page="upgrade">⚡ Апгрейды</button><button class="nav-btn" data-page="bets">🪙 Игры</button>
+          <button class="nav-btn" data-page="crosswords">🧩 Кроссворды</button><button class="nav-btn" data-page="leaders">🏆 Лидеры</button>
+        </div>
         <h1>О проекте <span>CRYPTO INVESTOR</span></h1>
         <p class="muted">CRYPTO INVESTOR — игровой симулятор управления виртуальным капиталом. Здесь можно получать игровую валюту, приобретать игровые активы и отслеживать развитие своего профиля.</p>
       </div>
@@ -234,6 +231,6 @@
   <div id="fireworks" class="fireworks" aria-hidden="true"></div>
   <div id="bonusPopup" class="bonus-popup" role="status" aria-live="polite"></div>
   <footer>CRYPTO INVESTOR · игровой симулятор капитала</footer>
-  <script src="script.js?v=20261114-admin-panel-1"></script>
+  <script src="script.js?v=20261114-gold-bottom-2"></script>
 </body>
 </html>
