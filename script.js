@@ -644,12 +644,12 @@ if(caseChoices)caseChoices.addEventListener('click',e=>{
 });
 if(openCaseButton)openCaseButton.addEventListener('click',async()=>{
  if(!selectedCaseReward||busy)return;
- openCaseButton.disabled=true;busy=true;$('casePreviewStatus').textContent='Выдаём выбранную награду…';
+ openCaseButton.disabled=true;busy=true;const revealCard=caseChoices.querySelector('[data-case-reward="'+selectedCaseReward+'"]');if(revealCard)revealCard.classList.add('case-reveal');$('casePreviewStatus').textContent='Открываем кейс…';
  try{
   const result=await api('/game/open-case',{rewardKey:selectedCaseReward});
-  game=normalizeGameState(result.state);renderAll();updateCaseUI();
+  game=normalizeGameState(result.state);renderAll();if(revealCard){revealCard.classList.remove('case-reveal');revealCard.classList.add('case-revealed');}updateCaseUI();
   $('casePreviewStatus').textContent='Готово! Получено: '+result.reward+'.';
-  selectedCaseReward=null;caseChoices.querySelectorAll('[data-case-reward]').forEach(x=>x.classList.remove('selected'));updateCaseUI();
+  selectedCaseReward=null;caseChoices.querySelectorAll('[data-case-reward]').forEach(x=>x.classList.remove('selected','case-revealed','case-reveal'));updateCaseUI();
  }catch(error){$('casePreviewStatus').textContent=error.message||'Не удалось открыть кейс.';updateCaseUI();}
  finally{busy=false;updateCaseUI();}
 });
