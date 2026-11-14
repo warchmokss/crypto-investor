@@ -281,7 +281,8 @@ async function api(path,body) {
   try {
     response=await fetch(`https://crypto-investor-72f3.onrender.com/api${path}`,{
       method:body?'POST':'GET',
-      headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},
+      cache:'no-store',
+      headers:{'Content-Type':'application/json','Cache-Control':'no-cache, no-store',...(token?{Authorization:`Bearer ${token}`}:{})},
       ...(body?{body:JSON.stringify(body)}:{}),
       signal:controller.signal
     });
@@ -291,6 +292,7 @@ async function api(path,body) {
   } finally {
     clearTimeout(timeout);
   }
+  if(response.status===304) throw new Error('Сервер вернул устаревший ответ. Нажми «Повторить» — приложение запросит свежие данные.');
   const data=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(data.error||`Ошибка сервера (${response.status})`);
   return data;
