@@ -55,9 +55,9 @@ export const ASSETS = {
     {id:'car48',name:"Range Rover Sport",icon:"\ud83d\ude97",cost:281451515,income:703629,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car49',name:"Tesla Model 3",icon:"\ud83d\ude97",cost:326483757,income:816209,description:"Автомобиль для личного пользования и получения игрового дохода."},
     {id:'car50',name:"Tesla Model S",icon:"\ud83d\ude97",cost:378721158,income:946803,description:"Автомобиль для личного пользования и получения игрового дохода."},
-    {id:'car51',name:"Bugatti Chiron",icon:"🏎️",image:"https://autorai.nl/wp-content/uploads/2018/03/2018-Bugatti-Chiron-Sport-11-1600x1153.jpg",cost:400000000,income:10000000,description:"Гиперкар Bugatti Chiron — вершина автомобильной коллекции."},
-    {id:'car52',name:"Ducati Panigale V4",icon:"🏍️",image:"https://wallpapercrafter.com/desktop1/632630-Motorcycles-Ducati-Ducati-Panigale-V4-Motorcycle.jpg",cost:36000000,income:900000,description:"Спортивный мотоцикл Ducati Panigale V4."},
-    {id:'car53',name:"Lamborghini Aventador",icon:"🏎️",image:"https://images.collectingcars.com/017152/LAMBO-145.jpg?auto=format%2Ccompress&cs=srgb&fit=clip&q=85&w=2000",cost:250000000,income:6250000,description:"Оранжевый суперкар Lamborghini Aventador."}
+    {id:'car52',name:"Ducati Panigale V4",icon:"🏍️",image:"https://commons.wikimedia.org/wiki/Special:FilePath/Ducati_Panigale_V4_2026.jpg?width=900",cost:36000000,income:900000,description:"Спортивный мотоцикл Ducati Panigale V4."},
+    {id:'car53',name:"Lamborghini Aventador",icon:"🏎️",image:"https://commons.wikimedia.org/wiki/Special:FilePath/Lamborghini_Aventador.jpg?width=900",cost:250000000,income:6250000,description:"Оранжевый суперкар Lamborghini Aventador."},
+    {id:'car51',name:"Bugatti Chiron",icon:"🏎️",image:"https://commons.wikimedia.org/wiki/Special:FilePath/A_Bugatti_Chiron.jpg?width=900",cost:400000000,income:10000000,description:"Гиперкар Bugatti Chiron — самый дорогой автомобиль коллекции."}
   ],
   businesses: [
     {id:'biz1',name:"Кофейня",icon:"\ud83c\udfe2",cost:3000000,income:9000,description:"Прибыльное предприятие с регулярным игровым доходом."},
