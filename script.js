@@ -1,3 +1,4 @@
+window.__ciMainScriptLoaded = true;
 // Показываем ошибки JavaScript прямо в интерфейсе Mini App, чтобы запуск не зависал молча.
 (function installStartupDiagnostics(){
   function showStartupError(message){
@@ -726,13 +727,6 @@ document.querySelectorAll('[data-tournament]').forEach(btn=>btn.addEventListener
 document.querySelector('[data-page="tournaments"]').addEventListener('click',renderTournaments);
 
 
-// Запускаем подключение сразу после инициализации интерфейса.
-start().catch(error => {
-  const status = document.getElementById('saveStatus');
-  if (status) status.textContent = 'Ошибка запуска игры: ' + (error?.message || 'неизвестная ошибка');
-});
-
-
 // 
 const CASE_ITEMS=[
  {id:'neon_coin',name:'Неоновая монета',icon:'🪙',rarity:'Обычный',sellPrice:250000},
@@ -788,3 +782,14 @@ if(starterButton)starterButton.addEventListener('click',async()=>{
  catch(error){status.textContent=error.message||'Не удалось получить набор.';starterButton.disabled=false;}
 });
 updateCaseUI();
+
+
+// Запускаем игру только после объявления всех игровых данных и обработчиков.
+start().catch(error => {
+  stopConnectionTimer();
+  const status = document.getElementById('saveStatus');
+  if (status) {
+    status.textContent = 'Ошибка запуска игры: ' + (error?.message || 'неизвестная ошибка');
+    status.style.color = '#ff7777';
+  }
+});
