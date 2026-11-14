@@ -240,7 +240,7 @@ let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory
 const DEMO_KEY='crypto-investor-demo-v1';
 function saveDemo(){if(demoMode&&game)localStorage.setItem(DEMO_KEY,JSON.stringify(game));}
 function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:100000,taps:0,tapReward:300},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0,caseTokens:0,uniqueItems:{}};}
-function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||300},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0,caseTokens:Number(value.caseTokens)||0,uniqueItems:value.uniqueItems&&typeof value.uniqueItems==='object'?value.uniqueItems:{}};}
+function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||300},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0,caseTokens:Number(value.caseTokens)||0,uniqueItems:value.uniqueItems&&typeof value.uniqueItems==='object'?value.uniqueItems:{},globalTapBoost:value.globalTapBoost&&typeof value.globalTapBoost==='object'?value.globalTapBoost:{active:false,multiplier:1,expiresAt:null}};}
 function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(!saved||!saved.player||typeof saved.player!=='object')return emptyGame();const valid=normalizeGameState(saved);if(!valid.purchasedUpgrades.length&&Number(valid.player.tapReward)===50){valid.player.tapReward=300;localStorage.setItem(DEMO_KEY,JSON.stringify(valid));}return valid;}catch{return emptyGame();}}
 function levelForTaps(taps){
   const safeTaps=Math.max(0,Math.floor(Number(taps)||0));
@@ -325,9 +325,14 @@ function updateDisplay(){
   if(levelText)levelText.textContent=level>=999?'Максимальный уровень':money(progress)+' / 200 тапов';
   if(levelBar)levelBar.style.width=(level>=999?100:Math.min(100,(progress/200)*100))+'%';
   $('upgradeBalance').textContent=money(p.balance)+' ₽';$('businessBalance').textContent=money(p.balance)+' ₽';$('passiveIncome').textContent=money(game.passiveIncome)+' ₽/мин';
-  $('tapButton').querySelector('small').textContent=`+${money(p.tapReward)} ₽ за нажатие`;
+  const boost=game.globalTapBoost||{active:false};
+  $('tapButton').querySelector('small').textContent=`+${money(p.tapReward*(boost.active?2:1))} ₽ за нажатие`;
+  updateGlobalTapBoost();
   $('tapButton').setAttribute('aria-label',`Получить ${p.tapReward} рублей`);
 }
+
+function updateGlobalTapBoost(){const badge=$('globalTapBoost'),timer=$('globalTapBoostTimer');if(!badge||!timer)return;const boost=game?.globalTapBoost;if(!boost?.active||!boost.expiresAt){badge.hidden=true;return;}const left=Math.max(0,Math.ceil((new Date(boost.expiresAt).getTime()-Date.now())/1000));if(left<=0){badge.hidden=true;return;}badge.hidden=false;timer.textContent=String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0');}
+setInterval(updateGlobalTapBoost,1000);
 function renderUpgrades(){
   $('upgradeGrid').innerHTML=UPGRADES.map(u=>{const bought=game.purchasedUpgrades.includes(u.id);return `<article class="shop-card"><div class="shop-icon">${u.icon}</div><h3>${u.name}</h3><p>${u.description}</p><div class="item-income">Награда за тап: ${u.tap} ₽</div><button class="shop-buy" data-upgrade="${u.id}" ${bought||game.player.balance<u.cost?'disabled':''}>${bought?'Куплено ✓':`Купить · ${money(u.cost)} ₽`}</button></article>`}).join('');
 }
