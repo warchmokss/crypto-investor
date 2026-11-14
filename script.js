@@ -247,11 +247,11 @@ function demoApi(path,body={}){
     game.starterPackClaimed=true;game.caseTokens=(game.caseTokens||0)+1;
   }
   else if(path==='/game/open-case'){
-    const rewards={bitcoin:{label:'Bitcoin (BTC)',type:'unique'},cash5000000:{label:'5 000 000 ₽',type:'cash',amount:5000000},cash4000000:{label:'4 000 000 ₽',type:'cash',amount:4000000},cash3000000:{label:'3 000 000 ₽',type:'cash',amount:3000000},cash2000000:{label:'2 000 000 ₽',type:'cash',amount:2000000},cash1000000:{label:'1 000 000 ₽',type:'cash',amount:1000000},cash500000:{label:'500 000 ₽',type:'cash',amount:500000},cash100000:{label:'100 000 ₽',type:'cash',amount:100000}};
-    const reward=rewards[body.rewardKey];if(!reward)throw Error('Выбери награду.');
+    const items=[{id:'neon_coin',label:'Неоновая монета'},{id:'pixel_crown',label:'Пиксельная корона'},{id:'blue_flame',label:'Синее пламя'},{id:'cyber_glasses',label:'Кибер-очки'},{id:'golden_badge',label:'Золотой значок'},{id:'holo_cube',label:'Голографический куб'},{id:'star_wings',label:'Звёздные крылья'},{id:'crystal_fox',label:'Кристальный лис'}];
     if(game.caseTokens>0)game.caseTokens--;else{if(p.balance<5000000)throw Error('Нужно 5 000 000 ₽ или билет из стартового набора.');p.balance-=5000000;}
-    if(reward.type==='cash')p.balance+=reward.amount;else{game.uniqueItems=game.uniqueItems||{};game.uniqueItems.bitcoin=(game.uniqueItems.bitcoin||0)+1;}
-    saveDemo();return {state:game,reward:reward.label};
+    const item=items[Math.floor(Math.random()*items.length)];
+    game.uniqueItems=game.uniqueItems||{};game.uniqueItems[item.id]=(game.uniqueItems[item.id]||0)+1;
+    saveDemo();return {state:game,reward:{itemId:item.id,label:item.label}};
   }
   else if(path==='/game/guess-number'){
     const guess=Number(body.guess);
@@ -327,9 +327,9 @@ function renderBusinesses(){
 function renderGarage(){
   const categories=['cars','apartments','businesses','stalls'];
   const labels={unique:"₿ Уникальные предметы",cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
-  categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});const uniqueCount=$('garageCountUnique');if(uniqueCount)uniqueCount.textContent=`${Number(game.uniqueItems?.bitcoin||0)} предметов`;
+  categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});const uniqueCount=$('garageCountUnique');if(uniqueCount)uniqueCount.textContent=`${Object.values(game.uniqueItems||{}).reduce((sum,n)=>sum+Number(n||0),0)} предметов`;
   const owned=garageCategory==='unique'?[]:ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
-  $('garageGrid').innerHTML=garageCategory==='unique'?((game.uniqueItems?.bitcoin||0)>0?'<article class="case-prize unique"><span>₿</span><h3>Bitcoin (BTC)</h3><p>Уникальные предметы в коллекции: '+money(game.uniqueItems.bitcoin)+'</p><small>Уникальный предмет</small></article>':'<p class="muted empty-garage">Пока нет уникальных предметов. Выбери Bitcoin в разделе «Кейсы».</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
+  $('garageGrid').innerHTML=garageCategory==='unique'?(Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).length?Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).map(([id,count])=>{const item=CASE_ITEMS.find(x=>x.id===id);return item?'<article class="case-prize unique"><span>'+item.icon+'</span><h3>'+item.name+'</h3><p>В коллекции: '+money(count)+'</p><small>'+item.rarity+' · косметический предмет</small></article>':''}).join(''):'<p class="muted empty-garage">Пока нет уникальных предметов. Открой Стандартный кейс.</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
 function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();renderGarage();if(typeof updateCaseUI==='function')updateCaseUI();}
@@ -615,44 +615,52 @@ start().catch(error => {
 
 
 // 
-const casePreviewButton=$('casePreviewButton');
-if(casePreviewButton)casePreviewButton.addEventListener('click',()=>{
- const track=$('caseReelTrack'),status=$('casePreviewStatus');
- if(!track||track.classList.contains('spinning'))return;
- track.classList.remove('spinning');void track.offsetWidth;track.classList.add('spinning');
- casePreviewButton.disabled=true;status.textContent='Идёт демонстрация анимации…';
- setTimeout(()=>{track.classList.remove('spinning');track.style.transform='translateX(0)';casePreviewButton.disabled=false;status.textContent='Демо завершено · баланс и инвентарь не изменены';},2900);
-});
-document.querySelectorAll('[data-donate="premium"]').forEach(button=>button.addEventListener('click',()=>{
- const status=$('donatePremiumStatus');if(status)status.textContent='Премиум-набор пока не продаётся. Платежи не подключены.';
-}));
-
-
-// Крипто-кейс: игрок заранее выбирает гарантированную награду.
-let selectedCaseReward=null;
-const caseChoices=document.getElementById('caseRewardChoices');
-const openCaseButton=$('openCaseButton');
+const CASE_ITEMS=[
+ {id:'neon_coin',name:'Неоновая монета',icon:'🪙',rarity:'Обычный'},
+ {id:'pixel_crown',name:'Пиксельная корона',icon:'👑',rarity:'Редкий'},
+ {id:'blue_flame',name:'Синее пламя',icon:'🔥',rarity:'Редкий'},
+ {id:'cyber_glasses',name:'Кибер-очки',icon:'🥽',rarity:'Эпический'},
+ {id:'golden_badge',name:'Золотой значок',icon:'🏅',rarity:'Эпический'},
+ {id:'holo_cube',name:'Голографический куб',icon:'🧊',rarity:'Легендарный'},
+ {id:'star_wings',name:'Звёздные крылья',icon:'🪽',rarity:'Легендарный'},
+ {id:'crystal_fox',name:'Кристальный лис',icon:'🦊',rarity:'Мифический'}
+];
+let caseSpinning=false;
 function updateCaseUI(){
  const count=$('caseTokenCount');if(count)count.textContent=String(game?.caseTokens||0);
- if(openCaseButton){openCaseButton.disabled=!selectedCaseReward||busy;openCaseButton.textContent=selectedCaseReward?'Получить выбранную награду':'Выбери награду';}
+ if(openCaseButton){openCaseButton.disabled=caseSpinning||busy||(!game?.caseTokens&&Number(game?.player?.balance||0)<5000000);openCaseButton.textContent=caseSpinning?'Открываем…':(game?.caseTokens?'Открыть кейс · бесплатный билет':'Открыть кейс · 5 000 000 ₽');}
 }
-if(caseChoices)caseChoices.addEventListener('click',e=>{
- const choice=e.target.closest('[data-case-reward]');if(!choice)return;
- selectedCaseReward=choice.dataset.caseReward;
- caseChoices.querySelectorAll('[data-case-reward]').forEach(x=>x.classList.toggle('selected',x===choice));
- updateCaseUI();
-});
+function renderCaseReel(){
+ const track=$('caseReelTrack');if(!track)return;
+ const reel=Array.from({length:31},()=>CASE_ITEMS[Math.floor(Math.random()*CASE_ITEMS.length)]);
+ track.innerHTML=reel.map(item=>'<div class="case-reel-item"><span>'+item.icon+'</span><b>'+item.name+'</b><small>'+item.rarity+'</small></div>').join('');
+ track.style.transition='none';track.style.transform='translateX(0)';
+}
 if(openCaseButton)openCaseButton.addEventListener('click',async()=>{
- if(!selectedCaseReward||busy)return;
- openCaseButton.disabled=true;busy=true;const revealCard=caseChoices.querySelector('[data-case-reward="'+selectedCaseReward+'"]');if(revealCard)revealCard.classList.add('case-reveal');$('casePreviewStatus').textContent='Открываем кейс…';
+ if(caseSpinning||busy||!game?.player)return;
+ caseSpinning=true;busy=true;openCaseButton.disabled=true;
+ const status=$('casePreviewStatus');status.textContent='Кейс открывается…';
+ const track=$('caseReelTrack');renderCaseReel();track.classList.add('spinning');
  try{
-  const result=await api('/game/open-case',{rewardKey:selectedCaseReward});
-  game=normalizeGameState(result.state);renderAll();if(revealCard){revealCard.classList.remove('case-reveal');revealCard.classList.add('case-revealed');}updateCaseUI();
-  $('casePreviewStatus').textContent='Готово! Получено: '+result.reward+'.';
-  selectedCaseReward=null;caseChoices.querySelectorAll('[data-case-reward]').forEach(x=>x.classList.remove('selected','case-revealed','case-reveal'));updateCaseUI();
- }catch(error){$('casePreviewStatus').textContent=error.message||'Не удалось открыть кейс.';updateCaseUI();}
- finally{busy=false;updateCaseUI();}
+  const result=await api('/game/open-case',{});
+  const reward=result.reward;
+  const chosen=CASE_ITEMS.find(x=>x.id===reward.itemId)||CASE_ITEMS[0];
+  const cells=Array.from({length:31},(_,i)=>i===24?chosen:CASE_ITEMS[Math.floor(Math.random()*CASE_ITEMS.length)]);
+  track.innerHTML=cells.map(item=>'<div class="case-reel-item"><span>'+item.icon+'</span><b>'+item.name+'</b><small>'+item.rarity+'</small></div>').join('');
+  track.style.transition='none';track.style.transform='translateX(0)';void track.offsetWidth;
+  const cellWidth=142, target=24*cellWidth-(track.parentElement.clientWidth/2-cellWidth/2);
+  track.style.transition='transform 4.2s cubic-bezier(.08,.72,.12,1)';
+  track.style.transform='translateX(-'+target+'px)';
+  await new Promise(resolve=>setTimeout(resolve,4350));
+  game=normalizeGameState(result.state);renderAll();showFireworks();
+  status.textContent='Получен предмет: '+reward.label+' · добавлен в гараж!';
+  renderCaseReel();
+ }catch(error){status.textContent=error.message||'Не удалось открыть кейс.';}
+ finally{caseSpinning=false;busy=false;updateCaseUI();}
 });
+document.querySelectorAll('[data-donate="premium"]').forEach(button=>button.addEventListener('click',()=>{
+ const status=$('donatePremiumStatus');if(status)status.textContent='Платёжная функция пока не подключена.';
+}));
 const starterButton=document.querySelector('[data-donate="starter"]');
 if(starterButton)starterButton.addEventListener('click',async()=>{
  const status=$('donateStarterStatus');starterButton.disabled=true;status.textContent='Получаем набор…';
