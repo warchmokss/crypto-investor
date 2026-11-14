@@ -228,10 +228,13 @@ function demoApi(path,body={}){
   if(path==='/game/state')return game;
   const p=game.player;
   if(path==='/game/tap'){
-    const oldLevel=levelForTaps(p.taps).level;
-    p.taps++;
+    const count=Number(body.count??1);
+    if(!Number.isSafeInteger(count)||count<1||count>1000)throw Error('Некорректное количество тапов.');
+    const oldTaps=p.taps,oldLevel=levelForTaps(oldTaps).level;
+    p.taps+=count;
     const newLevel=levelForTaps(p.taps).level;
-    p.balance+=p.tapReward+(p.taps%100===0?500:0)+Math.max(0,newLevel-oldLevel)*25000;
+    const bonuses=(Math.floor(p.taps/100)-Math.floor(oldTaps/100))*500;
+    p.balance+=p.tapReward*count+bonuses+Math.max(0,newLevel-oldLevel)*25000;
   }
   else if(path==='/game/guess-number'){
     const guess=Number(body.guess),next=Number(localStorage.getItem('ci-guess-number-next-play')||0);
@@ -398,7 +401,41 @@ async function start(){
     };
   }
 }
-$('tapButton').addEventListener('click',()=>action(async()=>{const old=game.player.taps;const next=await api('/game/tap',{});if(next.player.taps%100===0&&next.player.taps!==old)showFireworks();return next;},'Монеты начислены!'));
+// Очередь тапов: быстрые клики накапливаются и отправляются пачками,
+ // поэтому занятый запрос не отбрасывает следующие нажатия.
+let pendingTaps=0,tapFlushPromise=null;
+async function flushTapQueue(){
+ if(tapFlushPromise)return tapFlushPromise;
+ tapFlushPromise=(async()=>{
+  while(pendingTaps>0){
+   const count=Math.min(1000,pendingTaps);pendingTaps-=count;
+   try{
+    const next=await api('/game/tap',{count});
+    const old=Number(game?.player?.taps||0);
+    game=normalizeGameState(next);
+    if(Math.floor(game.player.taps/100)>Math.floor(old/100))showFireworks();
+    renderAll();
+    $('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';
+    $('tapMessage').textContent='Засчитано тапов: '+count;
+   }catch(error){
+    pendingTaps+=count;
+    $('tapMessage').textContent=error.message||'Не удалось сохранить тапы. Нажми кнопку ещё раз.';
+    $('saveStatus').textContent='Не удалось сохранить тапы';
+    break;
+   }
+  }
+ })().finally(()=>{tapFlushPromise=null;if(pendingTaps>0)flushTapQueue();});
+ return tapFlushPromise;
+}
+$('tapButton').addEventListener('click',()=>{
+ if(!game?.player)return;
+ pendingTaps++;
+ const r=$('tapButton').getBoundingClientRect(),el=document.createElement('span');
+ el.className='tap-float';el.textContent='+'+money(game.player.tapReward)+' ₽';
+ el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+20)+'px';
+ document.body.appendChild(el);setTimeout(()=>el.remove(),650);
+ flushTapQueue();
+});
 const adminCreditButton=$('adminCredit');
 if(adminCreditButton)adminCreditButton.addEventListener('click',async()=>{
   if(!isAdmin||demoMode)return;
