@@ -409,12 +409,18 @@ async function flushTapQueue(){
    const count=Math.min(1000,pendingTaps);pendingTaps-=count;
    try{
     const next=await api('/game/tap',{count});
-    const old=Number(game?.player?.taps||0);
+    const oldTaps=Number(game?.player?.taps||0);
+    const oldLevel=levelForTaps(oldTaps).level;
     game=normalizeGameState(next);
-    if(Math.floor(game.player.taps/100)>Math.floor(old/100))showFireworks();
+    const newLevel=levelForTaps(Number(game.player.taps||0)).level;
+    const levelsGained=Math.max(0,newLevel-oldLevel);
+    const levelReward=Number(next.levelReward ?? (levelsGained*25000));
+    if(Math.floor(game.player.taps/100)>Math.floor(oldTaps/100))showFireworks();
     renderAll();
     $('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';
-    $('tapMessage').textContent='Засчитано тапов: '+count;
+    $('tapMessage').textContent=levelsGained>0
+      ? '🎉 Вы перешли на '+(levelsGained===1?'следующий уровень!':'новый уровень!')+' +'+money(levelReward)+' ₽ зачислено на баланс.'
+      : 'Засчитано тапов: '+count;
    }catch(error){
     pendingTaps+=count;
     $('tapMessage').textContent=error.message||'Не удалось сохранить тапы. Нажми кнопку ещё раз.';
