@@ -410,7 +410,8 @@ if (TELEGRAM_WEBHOOK_SECRET) {
       {command:'start',description:'Открыть CRYPTO INVESTOR'},
       {command:'give',description:'Начислить игровые рубли'},
       {command:'balance',description:'Посмотреть баланс игрока'},
-      {command:'resetbalance',description:'Обнулить баланс игрока (главный админ)'},\n      {command:'resetallprogress',description:'Полный сброс прогресса всех игроков'},
+      {command:'resetbalance',description:'Обнулить баланс игрока (главный админ)'},
+      {command:'resetallprogress',description:'Полный сброс прогресса всех игроков'},
       {command:'ban',description:'Заблокировать аккаунт (главный админ)'},
       {command:'unban',description:'Разблокировать аккаунт (главный админ)'},
       {command:'help',description:'Помощь по командам'}
