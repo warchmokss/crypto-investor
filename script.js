@@ -327,12 +327,12 @@ function renderBusinesses(){
 function renderGarage(){
   const categories=['cars','apartments','businesses','stalls'];
   const labels={unique:"₿ Уникальные предметы",cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
-  categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});
+  categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});const uniqueCount=$('garageCountUnique');if(uniqueCount)uniqueCount.textContent=`${Number(game.uniqueItems?.bitcoin||0)} предметов`;
   const owned=garageCategory==='unique'?[]:ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
   $('garageGrid').innerHTML=garageCategory==='unique'?((game.uniqueItems?.bitcoin||0)>0?'<article class="case-prize unique"><span>₿</span><h3>Bitcoin (BTC)</h3><p>Уникальные предметы в коллекции: '+money(game.uniqueItems.bitcoin)+'</p><small>Уникальный предмет</small></article>':'<p class="muted empty-garage">Пока нет уникальных предметов. Выбери Bitcoin в разделе «Кейсы».</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
-function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();renderGarage();}
+function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();renderGarage();if(typeof updateCaseUI==='function')updateCaseUI();}
 function showFireworks(){
  const layer=$('fireworks');if(!layer)return;layer.innerHTML='';
  for(let i=0;i<42;i++){
