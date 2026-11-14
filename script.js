@@ -688,8 +688,8 @@ function renderMarketEstimate(){
 }
 function renderMarketHoldings(){
  const root=$('marketHoldings');if(!root)return;
- const entries=Object.entries(marketPortfolio).filter(([,q])=>Number(q)>0);
- root.innerHTML=entries.length?entries.map(([id,q])=>{const a=MARKET_ASSETS.find(x=>x.id===id);if(!a)return '';const qty=Number(q),change=Number(marketChanges[id]||0),changeValue=Number(marketChangeValues[id]||0)*qty,sign=changeValue>0?'+':changeValue<0?'−':'';return '<article class="holding-row"><span>'+a.icon+' '+a.name+' ('+a.ticker+')</span><b>'+qty.toFixed(4)+'</b><strong>'+money((marketPrices[id]||a.price)*qty)+' ₽<small class="'+(change>=0?'market-up':'market-down')+'">'+sign+money(Math.abs(changeValue))+' ₽ ('+(change>=0?'+':'')+change.toFixed(2)+'%) за минуту</small></strong><button class="shop-sell" type="button" data-market-sell="'+id+'">Продать всё</button></article>';}).join(''):'<p class="muted empty-garage">Портфель пока пуст. Купи активы на вкладке «Биржа» — они появятся здесь.</p>';
+ const entries=Object.entries(marketPortfolio).map(([id,value])=>{const item=value&&typeof value==='object'?value:{quantity:Number(value)||0,averageBuyPrice:0};return [id,item];}).filter(([,item])=>Number(item.quantity)>0);
+ root.innerHTML=entries.length?entries.map(([id,item])=>{const a=MARKET_ASSETS.find(x=>x.id===id);if(!a)return '';const qty=Number(item.quantity),avg=Number(item.averageBuyPrice)||0,current=Number(marketPrices[id]||a.price),saleValue=current*qty,costValue=avg*qty,profit=saleValue-costValue,change=Number(marketChanges[id]||0),changeClass=profit>=0?'market-up':'market-down';return '<article class="holding-row"><div class="holding-asset"><span class="holding-coin holding-'+id+'">'+a.icon+'</span><span><b>'+a.name+'</b><small>'+a.ticker+'</small></span></div><div class="holding-quantity"><small>Куплено</small><b>'+qty.toFixed(4)+'</b></div><div class="holding-buy"><small>Средняя цена покупки</small><b>'+(avg>0?money(avg)+' ₽':'нет данных')+'</b></div><div class="holding-sale"><small>Получишь при продаже</small><b>'+money(saleValue)+' ₽</b><small class="'+changeClass+'">'+(avg>0?(profit>=0?'+':'−')+money(Math.abs(profit))+' ₽ · '+(costValue>0?(profit/costValue*100).toFixed(2):'0.00')+'%':'Цена покупки не записана для старой позиции')+'</small></div><button class="shop-sell" type="button" data-market-sell="'+id+'">Продать всё</button></article>';}).join(''):'<p class="muted empty-garage">Портфель пока пуст. Купи активы на вкладке «Биржа» — они появятся здесь.</p>';
 }
 async function marketTrade(side){
  const status=$('marketStatus'),a=MARKET_ASSETS.find(x=>x.id===$('marketAsset').value),qty=Number($('marketQuantity').value);
@@ -698,10 +698,10 @@ async function marketTrade(side){
   const price=marketPrices[a.id]||a.price,total=side==='buy'?Math.ceil(price*qty):Math.floor(price*qty),owned=Number(marketPortfolio[a.id]||0);
   if(side==='buy'){
    if(total>game.player.balance){status.textContent='Недостаточно игровых рублей для покупки.';return;}
-   game.player.balance-=total;marketPortfolio[a.id]=owned+qty;status.textContent='Куплено: '+qty+' '+a.ticker+' за '+money(total)+' игровых ₽.';
+   game.player.balance-=total;const prior=marketPortfolio[a.id]&&typeof marketPortfolio[a.id]==='object'?marketPortfolio[a.id]:{quantity:owned,averageBuyPrice:0};marketPortfolio[a.id]={quantity:owned+qty,averageBuyPrice:((owned*(prior.averageBuyPrice||0))+(qty*price))/(owned+qty)};status.textContent='Куплено: '+qty+' '+a.ticker+' за '+money(total)+' игровых ₽.';
   }else{
    if(qty>owned+1e-9){status.textContent='В портфеле недостаточно этого актива.';return;}
-   const remaining=Math.max(0,owned-qty);if(remaining<1e-9)delete marketPortfolio[a.id];else marketPortfolio[a.id]=remaining;
+   const remaining=Math.max(0,owned-qty);if(remaining<1e-9)delete marketPortfolio[a.id];else{const prior=marketPortfolio[a.id]&&typeof marketPortfolio[a.id]==='object'?marketPortfolio[a.id]:{averageBuyPrice:0};marketPortfolio[a.id]={quantity:remaining,averageBuyPrice:Number(prior.averageBuyPrice)||0};}
    game.player.balance+=total;status.textContent='Продано: '+qty+' '+a.ticker+'. На баланс зачислено '+money(total)+' игровых ₽.';
   }
   saveDemo();saveMarketDemo();renderAll();renderMarket();return;
