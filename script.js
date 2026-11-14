@@ -354,7 +354,17 @@ function showLevelUpPopup(reward,level){
  showFireworks();
  setTimeout(()=>popup.classList.remove('show'),2700);
 }
-async function refresh(){game=normalizeGameState(await api('/game/state'));renderAll();}
+async function refresh(){
+ game=normalizeGameState(await api('/game/state'));
+ if(!demoMode){
+  const data=await api('/market/state');
+  marketPrices=Object.fromEntries(data.market.assets.map(a=>[a.id,Number(a.price)]));
+  marketChanges=Object.fromEntries(data.market.assets.map(a=>[a.id,0]));
+  marketPortfolio=data.market.portfolio||{};
+  marketUpdatedAt=data.market.updatedAt||null;
+ }
+ renderAll();
+}
 async function action(fn,successText){if(busy)return;busy=true;try{game=await fn();renderAll();$('tapMessage').textContent=successText||'Готово!';$('saveStatus').textContent=demoMode?'Демо-прогресс сохранён на этом устройстве ✓':'Прогресс синхронизирован с сервером ✓';}catch(e){$('tapMessage').textContent=e.message;$('saveStatus').textContent='Не удалось выполнить действие';}finally{busy=false}}
 let connectionTimer=null,connectionStartedAt=0,connectionStage='Подключаемся к игровому серверу';
 function updateConnectionStatus(){
@@ -504,7 +514,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',
 $('upgradeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-upgrade]');if(b)action(()=>api('/game/buy-upgrade',{upgradeId:b.dataset.upgrade}),'Апгрейд куплен!');});
 $('businessCategories').addEventListener('click',e=>{const b=e.target.closest('[data-category]');if(!b)return;activeCategory=b.dataset.category;document.querySelectorAll('.category-btn').forEach(x=>x.classList.toggle('active',x===b));renderBusinesses();});
 $('businessGrid').addEventListener('click',e=>{const sell=e.target.closest('[data-sell]');if(sell){if(confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:sell.dataset.sell}),'Объект продан!');return;}const b=e.target.closest('[data-asset]');if(b)action(()=>api('/game/buy-asset',{assetId:b.dataset.asset}),'Поздравляем с покупкой!');});
-$('garageGrid').addEventListener('click',e=>{const unique=e.target.closest('[data-unique-sell]');if(unique){const item=CASE_ITEMS.find(x=>x.id===unique.dataset.uniqueSell);if(item&&confirm('Продать '+item.name+' за '+money(item.sellPrice)+' ₽?'))action(()=>api('/game/sell-unique-item',{itemId:item.id}),'Уникальный предмет продан!');return;}const marketSell=e.target.closest('[data-market-sell]');if(marketSell){const id=marketSell.dataset.marketSell;const asset=MARKET_ASSETS.find(x=>x.id===id);const qty=Number(marketPortfolio[id]||0);if(asset&&qty>0&&confirm('Продать все '+qty+' '+asset.ticker+' по текущей демо-котировке?')){const proceeds=Math.floor((marketPrices[id]||asset.price)*qty);delete marketPortfolio[id];game.player.balance+=proceeds;saveDemo();saveMarketDemo();renderAll();$('marketStatus').textContent='Продано '+asset.ticker+'. На баланс зачислено '+money(proceeds)+' игровых ₽.';}return;}const b=e.target.closest('[data-garage-sell]');if(b&&confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:b.dataset.garageSell}),'Объект продан!');});
+$('garageGrid').addEventListener('click',e=>{const unique=e.target.closest('[data-unique-sell]');if(unique){const item=CASE_ITEMS.find(x=>x.id===unique.dataset.uniqueSell);if(item&&confirm('Продать '+item.name+' за '+money(item.sellPrice)+' ₽?'))action(()=>api('/game/sell-unique-item',{itemId:item.id}),'Уникальный предмет продан!');return;}const marketSell=e.target.closest('[data-market-sell]');if(marketSell){const id=marketSell.dataset.marketSell;const asset=MARKET_ASSETS.find(x=>x.id===id);const qty=Number(marketPortfolio[id]||0);if(asset&&qty>0&&confirm('Продать все '+qty+' '+asset.ticker+' по текущей игровой котировке?')){if(demoMode){const proceeds=Math.floor((marketPrices[id]||asset.price)*qty);delete marketPortfolio[id];game.player.balance+=proceeds;saveDemo();saveMarketDemo();renderAll();$('marketStatus').textContent='Продано '+asset.ticker+'. На баланс зачислено '+money(proceeds)+' игровых ₽.';}else{try{const result=await api('/market/trade',{assetId:id,side:'sell',quantity:qty});game=normalizeGameState(result.state);marketPrices=Object.fromEntries(result.market.assets.map(x=>[x.id,Number(x.price)]));marketPortfolio=result.market.portfolio||{};renderAll();$('marketStatus').textContent='Продано '+asset.ticker+'. Средства зачислены на игровой баланс.';}catch(err){$('marketStatus').textContent=err.message||'Не удалось продать актив.';}}}return;}const b=e.target.closest('[data-garage-sell]');if(b&&confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:b.dataset.garageSell}),'Объект продан!');});
 document.querySelectorAll('[data-garage]').forEach(b=>b.addEventListener('click',()=>{garageCategory=b.dataset.garage;document.querySelectorAll('[data-garage]').forEach(x=>x.classList.toggle('active',x===b));renderGarage();}));
 $('propertyUpgradeGrid').addEventListener('click',e=>{const b=e.target.closest('[data-property-upgrade]');if(b)action(()=>api('/game/upgrade-asset',{assetId:b.dataset.propertyUpgrade}),'Имущество улучшено!');});
 window.addEventListener('focus',()=>{if(token&&!busy)refresh().catch(()=>{});});
@@ -587,7 +597,7 @@ document.querySelectorAll('[data-leader-type]').forEach(btn=>btn.addEventListene
 setInterval(()=>{if(document.getElementById('leaders')?.classList.contains('active'))renderLeaderboard();},5*60*1000);
 
 
-/* Демо-биржа: условные котировки и портфель хранятся локально в браузере. */
+/* Игровая биржа: в Telegram покупки и портфель сохраняются на сервере. */
 const MARKET_ASSETS=[
  {id:'btc',name:'Bitcoin',ticker:'BTC',icon:'₿',price:5600000,group:'Криптовалюта'},
  {id:'eth',name:'Ethereum',ticker:'ETH',icon:'Ξ',price:185000,group:'Криптовалюта'},
@@ -600,16 +610,30 @@ const MARKET_ASSETS=[
  {id:'msft',name:'Microsoft',ticker:'MSFT',icon:'🪟',price:41500,group:'Акции'}
 ];
 const MARKET_KEY='crypto-investor-market-demo-v1';
-let marketPrices={},marketChanges={},marketPortfolio={},marketJoined={};
+let marketPrices={},marketChanges={},marketPortfolio={},marketJoined={},marketUpdatedAt=null;
 function loadMarketDemo(){
  try{const v=JSON.parse(localStorage.getItem(MARKET_KEY)||'{}');marketPortfolio=v.portfolio||{};marketJoined=v.joined||{};}catch{marketPortfolio={};marketJoined={};}
  MARKET_ASSETS.forEach(a=>{marketPrices[a.id]=a.price;marketChanges[a.id]=0;});
 }
 function saveMarketDemo(){try{localStorage.setItem(MARKET_KEY,JSON.stringify({portfolio:marketPortfolio,joined:marketJoined}));}catch{}}
-function refreshMarketPrices(){
- MARKET_ASSETS.forEach(a=>{const change=(Math.random()*0.05)-0.025;marketPrices[a.id]=Math.max(.01,marketPrices[a.id]*(1+change));marketChanges[a.id]=change*100;});
- renderMarket();const stamp=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
- $('exchangeUpdated').textContent='Последнее обновление демо-котировок: '+stamp;
+async function refreshMarketPrices(){
+ const button=$('exchangeRefresh');if(button)button.disabled=true;
+ try{
+  if(demoMode){
+   MARKET_ASSETS.forEach(a=>{const change=(Math.random()*0.05)-0.025;marketPrices[a.id]=Math.max(.01,(marketPrices[a.id]||a.price)*(1+change));marketChanges[a.id]=change*100;});
+   $('exchangeUpdated').textContent='Локальный просмотр котировок. Для общего портфеля открой игру через Telegram.';
+  }else{
+   const data=await api('/market/state');
+   marketPrices=Object.fromEntries(data.market.assets.map(a=>[a.id,Number(a.price)]));
+   marketChanges=Object.fromEntries(data.market.assets.map(a=>[a.id,0]));
+   marketPortfolio=data.market.portfolio||{};marketUpdatedAt=data.market.updatedAt||null;
+   game=normalizeGameState(data.state);
+   $('exchangeUpdated').textContent='Котировки обновлены: '+new Date(marketUpdatedAt||Date.now()).toLocaleTimeString('ru-RU');
+   renderAll();
+  }
+  renderMarket();
+ }catch(e){$('exchangeUpdated').textContent=e.message||'Не удалось обновить котировки.';}
+ finally{if(button)button.disabled=false;}
 }
 function renderMarket(){
  if(!$('marketGrid'))return;
@@ -630,20 +654,30 @@ function renderMarketHoldings(){
  const entries=Object.entries(marketPortfolio).filter(([,q])=>Number(q)>0);
  root.innerHTML=entries.length?entries.map(([id,q])=>{const a=MARKET_ASSETS.find(x=>x.id===id);return a?'<article class="holding-row"><span>'+a.icon+' '+a.name+' ('+a.ticker+')</span><b>'+Number(q).toFixed(4)+'</b><strong>'+money((marketPrices[id]||a.price)*q)+' ₽</strong><button class="shop-sell" type="button" data-market-sell="'+id+'">Продать всё</button></article>':''}).join(''):'<p class="muted empty-garage">Портфель пока пуст. Купи активы на вкладке «Биржа» — они появятся здесь.</p>';
 }
-function marketTrade(side){
+async function marketTrade(side){
  const status=$('marketStatus'),a=MARKET_ASSETS.find(x=>x.id===$('marketAsset').value),qty=Number($('marketQuantity').value);
- if(!demoMode){status.textContent='Биржа пока доступна только в браузерном демо-режиме.';return;}
  if(!a||!Number.isFinite(qty)||qty<=0||qty>100000000){status.textContent='Укажи корректное количество.';return;}
- const price=marketPrices[a.id]||a.price,total=Math.ceil(price*qty),owned=Number(marketPortfolio[a.id]||0);
- if(side==='buy'){
-  if(total>game.player.balance){status.textContent='Недостаточно игровых рублей для покупки.';return;}
-  game.player.balance-=total;marketPortfolio[a.id]=owned+qty;status.textContent='Куплено: '+qty+' '+a.ticker+' за '+money(total)+' игровых ₽.';
- }else{
-  if(qty>owned+1e-9){status.textContent='В портфеле недостаточно этого актива.';return;}
-  const remaining=Math.max(0,owned-qty);if(remaining<1e-9)delete marketPortfolio[a.id];else marketPortfolio[a.id]=remaining;
-  game.player.balance+=Math.floor(price*qty);status.textContent='Продано: '+qty+' '+a.ticker+'. На баланс зачислено '+money(Math.floor(price*qty))+' игровых ₽.';
+ if(demoMode){
+  const price=marketPrices[a.id]||a.price,total=side==='buy'?Math.ceil(price*qty):Math.floor(price*qty),owned=Number(marketPortfolio[a.id]||0);
+  if(side==='buy'){
+   if(total>game.player.balance){status.textContent='Недостаточно игровых рублей для покупки.';return;}
+   game.player.balance-=total;marketPortfolio[a.id]=owned+qty;status.textContent='Куплено: '+qty+' '+a.ticker+' за '+money(total)+' игровых ₽.';
+  }else{
+   if(qty>owned+1e-9){status.textContent='В портфеле недостаточно этого актива.';return;}
+   const remaining=Math.max(0,owned-qty);if(remaining<1e-9)delete marketPortfolio[a.id];else marketPortfolio[a.id]=remaining;
+   game.player.balance+=total;status.textContent='Продано: '+qty+' '+a.ticker+'. На баланс зачислено '+money(total)+' игровых ₽.';
+  }
+  saveDemo();saveMarketDemo();renderAll();renderMarket();return;
  }
- saveDemo();saveMarketDemo();renderAll();renderMarket();
+ const buttons=[$('marketBuy'),$('marketSell')];buttons.forEach(b=>b.disabled=true);status.textContent='Проводим операцию на сервере…';
+ try{
+  const result=await api('/market/trade',{assetId:a.id,side,quantity:qty});
+  game=normalizeGameState(result.state);marketPrices=Object.fromEntries(result.market.assets.map(x=>[x.id,Number(x.price)]));marketPortfolio=result.market.portfolio||{};marketUpdatedAt=result.market.updatedAt||null;
+  const trade=result.trade;
+  status.textContent=(side==='buy'?'Куплено ':'Продано ')+trade.quantity+' '+a.ticker+' по '+money(trade.price)+' ₽. Сумма: '+money(trade.total)+' ₽.';
+  renderAll();renderMarket();
+ }catch(e){status.textContent=e.message||'Не удалось выполнить операцию.';}
+ finally{buttons.forEach(b=>b.disabled=false);}
 }
 $('exchangeRefresh').addEventListener('click',refreshMarketPrices);
 $('marketAsset').addEventListener('change',renderMarketEstimate);
