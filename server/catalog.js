@@ -1,7 +1,7 @@
 export const UPGRADES = [
-  { id: 'tap2', name: 'Усиленный тап', cost: 50000, tap: 500 },
-  { id: 'tap3', name: 'Профессиональный тап', cost: 250000, tap: 1000 },
-  { id: 'tap4', name: 'Золотой тап', cost: 1000000, tap: 2000 }
+  { id: 'tap2', name: 'Усиленный тап', cost: 100000, tap: 350 },
+  { id: 'tap3', name: 'Профессиональный тап', cost: 500000, tap: 450 },
+  { id: 'tap4', name: 'Универсальный тап', cost: 500000, tap: 600 }
 ];
 export const ASSETS = {
   cars: [
@@ -214,4 +214,5 @@ export const ASSETS = {
   ]
 };
 export const ALL_ASSETS = Object.values(ASSETS).flat();
-export const getIncome = (asset, level=0) => Math.floor(asset.income * (1 + level * 0.25));
+// Общий множитель пассивного дохода для всех типов активов.
+export const getIncome = (asset, level=0) => Math.floor(asset.income * (1 + level * 0.25) * 2.5);
