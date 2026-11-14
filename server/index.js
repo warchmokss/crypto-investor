@@ -265,9 +265,9 @@ app.post('/api/game/sell-unique-item',auth,async(req,res,next)=>{try{
 
 function levelForTaps(taps){
  const safeTaps=Math.max(0,Math.floor(Number(taps)||0));
- const level=Math.min(999,Math.floor(safeTaps/50)+1);
- const total=(level-1)*50;
- return {level,progress:Math.max(0,safeTaps-total),needed:50,nextThreshold:level*50};
+ const level=Math.min(999,Math.floor(safeTaps/200)+1);
+ const total=(level-1)*200;
+ return {level,progress:Math.max(0,safeTaps-total),needed:200,nextThreshold:level*200};
 }
 app.post('/api/game/tap',auth,async(req,res,next)=>{try{
  const count=Number(req.body?.count??1);
