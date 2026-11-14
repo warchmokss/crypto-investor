@@ -216,13 +216,23 @@ const ASSETS = {
 let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false, adminRole=null, adminTelegramId=null;
 const DEMO_KEY='crypto-investor-demo-v1';
 function saveDemo(){if(demoMode&&game)localStorage.setItem(DEMO_KEY,JSON.stringify(game));}
-function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:0,taps:0,tapReward:300},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}
+function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:100000,taps:0,tapReward:300},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}
 function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||300},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0};}
 function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(!saved||!saved.player||typeof saved.player!=='object')return emptyGame();const valid=normalizeGameState(saved);if(!valid.purchasedUpgrades.length&&Number(valid.player.tapReward)===50){valid.player.tapReward=300;localStorage.setItem(DEMO_KEY,JSON.stringify(valid));}return valid;}catch{return emptyGame();}}
+function levelForTaps(taps){
+  let level=1, nextThreshold=100, step=150, total=0;
+  while(level<999 && taps>=nextThreshold){total=nextThreshold;level++;nextThreshold+=step;step+=50;}
+  return {level,progress:Math.max(0,taps-total),needed:100+(level-1)*50};
+}
 function demoApi(path,body={}){
   if(path==='/game/state')return game;
   const p=game.player;
-  if(path==='/game/tap'){p.taps++;p.balance+=p.tapReward+(p.taps%100===0?500:0);}
+  if(path==='/game/tap'){
+    const oldLevel=levelForTaps(p.taps).level;
+    p.taps++;
+    const newLevel=levelForTaps(p.taps).level;
+    p.balance+=p.tapReward+(p.taps%100===0?500:0)+Math.max(0,newLevel-oldLevel)*25000;
+  }
   else if(path==='/game/buy-upgrade'){const u=UPGRADES.find(x=>x.id===body.upgradeId);if(!u)throw Error('Неизвестный апгрейд');if(game.purchasedUpgrades.includes(u.id))throw Error('Апгрейд уже куплен');if(p.balance<u.cost)throw Error('Недостаточно монет');p.balance-=u.cost;p.tapReward=u.tap;game.purchasedUpgrades.push(u.id);}
   else if(path==='/game/buy-asset'){const a=allAssets.find(x=>x.id===body.assetId);if(!a)throw Error('Объект не найден');if(game.owned.includes(a.id))throw Error('Объект уже куплен');if(p.balance<a.cost)throw Error('Недостаточно монет');p.balance-=a.cost;game.owned.push(a.id);}
   else if(path==='/game/sell-asset'){const a=allAssets.find(x=>x.id===body.assetId);if(!a||!game.owned.includes(a.id))throw Error('Объект не найден в собственности');p.balance+=Math.floor(a.cost*.7);game.owned=game.owned.filter(id=>id!==a.id);delete game.propertyLevels[a.id];}
@@ -259,10 +269,10 @@ async function api(path,body) {
 function updateDisplay(){
   if(!game)return; const p=game.player;
   $('balance').textContent=money(p.balance);$('tapCount').textContent=money(p.taps);
-  const level=Math.min(999,Math.floor(Number(p.taps||0)/100)+1),progress=level>=999?100:Number(p.taps||0)%100;
+  const levelInfo=levelForTaps(Number(p.taps||0)),level=levelInfo.level,progress=level>=999?100:levelInfo.progress,needed=levelInfo.needed;
   const levelName=$('levelName'),levelText=$('levelProgressText'),levelBar=$('levelProgress');
   if(levelName)levelName.textContent='Уровень '+level;
-  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':progress+' / 100 тапов';
+  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':progress+' / '+needed+' тапов';
   if(levelBar)levelBar.style.width=progress+'%';
   $('upgradeBalance').textContent=money(p.balance)+' ₽';$('businessBalance').textContent=money(p.balance)+' ₽';$('passiveIncome').textContent=money(game.passiveIncome)+' ₽/мин';
   $('tapButton').querySelector('small').textContent=`+${money(p.tapReward)} ₽ за нажатие`;
