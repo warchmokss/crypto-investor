@@ -88,6 +88,17 @@ async function getState(client,id,applyIncome=true) {
   }
   return { player:{telegramId:String(p.telegram_id),username:p.username,firstName:p.first_name,balance:Number(p.balance),taps:Number(p.taps),tapReward:p.tap_reward}, owned:assets.rows.map(x=>x.asset_id), purchasedUpgrades:up.rows.map(x=>x.upgrade_id), propertyLevels:levels, passiveIncome:income, caseTokens:Number(caseRow.rows[0]?.tokens||0), uniqueItems:Object.fromEntries(uniqueRows.rows.map(x=>[x.item_id,Number(x.quantity)])) };
 }
+app.post('/api/telegram/boot-check', (req,res) => {
+  const report = {
+    sdkPresent: req.body?.sdkPresent === true,
+    initDataPresent: req.body?.initDataPresent === true,
+    initDataLength: Math.max(0, Math.min(4096, Number(req.body?.initDataLength) || 0)),
+    platform: String(req.body?.platform || '').slice(0,40),
+    version: String(req.body?.version || '').slice(0,40)
+  };
+  req.log?.info(report, 'Telegram Mini App boot check');
+  res.json({ok:true});
+});
 app.post('/api/auth/telegram', async (req,res,next)=>{ try {
   const user=verifyTelegramInitData(req.body?.initData);
   await bansReady;
