@@ -8,7 +8,7 @@ import pinoHttp from 'pino-http';
 import Redis from 'ioredis';
 import { RedisStore } from 'rate-limit-redis';
 import pg from 'pg';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual, randomInt } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -123,16 +123,16 @@ app.get('/api/referral/link',auth,async(req,res,next)=>{try{
  res.json({link,invitedCount:Number(count.rows[0]?.total||0)});
  }catch(e){next(e)}});
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
-const CASE_REWARDS = Object.freeze({
- bitcoin:{label:'Bitcoin (BTC)',type:'unique',itemId:'bitcoin'},
- cash5000000:{label:'5 000 000 ₽',type:'cash',amount:5000000},
- cash4000000:{label:'4 000 000 ₽',type:'cash',amount:4000000},
- cash3000000:{label:'3 000 000 ₽',type:'cash',amount:3000000},
- cash2000000:{label:'2 000 000 ₽',type:'cash',amount:2000000},
- cash1000000:{label:'1 000 000 ₽',type:'cash',amount:1000000},
- cash500000:{label:'500 000 ₽',type:'cash',amount:500000},
- cash100000:{label:'100 000 ₽',type:'cash',amount:100000}
-});
+const CASE_ITEMS = Object.freeze([
+ {id:'neon_coin',label:'Неоновая монета'},
+ {id:'pixel_crown',label:'Пиксельная корона'},
+ {id:'blue_flame',label:'Синее пламя'},
+ {id:'cyber_glasses',label:'Кибер-очки'},
+ {id:'golden_badge',label:'Золотой значок'},
+ {id:'holo_cube',label:'Голографический куб'},
+ {id:'star_wings',label:'Звёздные крылья'},
+ {id:'crystal_fox',label:'Кристальный лис'}
+]);
 app.post('/api/game/claim-starter-pack',auth,async(req,res,next)=>{try{
  const state=await transaction(async c=>{
   const claim=await c.query('INSERT INTO player_starter_claims(telegram_id) VALUES($1) ON CONFLICT DO NOTHING RETURNING telegram_id',[req.playerId]);
@@ -143,8 +143,6 @@ app.post('/api/game/claim-starter-pack',auth,async(req,res,next)=>{try{
  res.json(state);
  }catch(e){next(e)}});
 app.post('/api/game/open-case',auth,async(req,res,next)=>{try{
- const reward=CASE_REWARDS[String(req.body?.rewardKey||'')];
- if(!reward)throw Object.assign(new Error('Сначала выбери награду из списка.'),{status:400});
  const result=await transaction(async c=>{
   const state=await getState(c,req.playerId);
   const token=await c.query('SELECT tokens FROM player_case_tokens WHERE telegram_id=$1 FOR UPDATE',[req.playerId]);
@@ -154,9 +152,9 @@ app.post('/api/game/open-case',auth,async(req,res,next)=>{try{
    const debit=await c.query('UPDATE players SET balance=balance-5000000,updated_at=NOW() WHERE telegram_id=$1 AND balance>=5000000 RETURNING balance',[req.playerId]);
    if(!debit.rowCount)throw Object.assign(new Error('Нужно 5 000 000 ₽ или бесплатный билет из стартового набора.'),{status:400});
   }
-  if(reward.type==='cash')await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,reward.amount]);
-  else await c.query('INSERT INTO player_unique_items(telegram_id,item_id,quantity) VALUES($1,$2,1) ON CONFLICT(telegram_id,item_id) DO UPDATE SET quantity=player_unique_items.quantity+1',[req.playerId,reward.itemId]);
-  return {state:await getState(c,req.playerId,false),reward:reward.label};
+  const reward=CASE_ITEMS[randomInt(CASE_ITEMS.length)];
+  await c.query('INSERT INTO player_unique_items(telegram_id,item_id,quantity) VALUES($1,$2,1) ON CONFLICT(telegram_id,item_id) DO UPDATE SET quantity=player_unique_items.quantity+1',[req.playerId,reward.id]);
+  return {state:await getState(c,req.playerId,false),reward:{itemId:reward.id,label:reward.label}};
  });
  res.json(result);
  }catch(e){next(e)}});
