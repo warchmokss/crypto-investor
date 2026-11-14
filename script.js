@@ -220,8 +220,8 @@ const ASSETS = {
 let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false, adminRole=null, adminTelegramId=null;
 const DEMO_KEY='crypto-investor-demo-v1';
 function saveDemo(){if(demoMode&&game)localStorage.setItem(DEMO_KEY,JSON.stringify(game));}
-function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:100000,taps:0,tapReward:300},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0};}
-function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||300},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0};}
+function emptyGame(){return {player:{telegramId:'demo',username:null,firstName:'Игрок',balance:100000,taps:0,tapReward:300},owned:[],purchasedUpgrades:[],propertyLevels:{},passiveIncome:0,caseTokens:0,uniqueItems:{}};}
+function normalizeGameState(value){if(!value||typeof value!=='object'||!value.player||typeof value.player!=='object')throw new Error('Игровые данные игрока не получены');return {...value,player:{...value.player,balance:Number(value.player.balance)||0,taps:Number(value.player.taps)||0,tapReward:Number(value.player.tapReward)||300},owned:Array.isArray(value.owned)?value.owned:[],purchasedUpgrades:Array.isArray(value.purchasedUpgrades)?value.purchasedUpgrades:[],propertyLevels:value.propertyLevels&&typeof value.propertyLevels==='object'?value.propertyLevels:{},passiveIncome:Number(value.passiveIncome)||0,caseTokens:Number(value.caseTokens)||0,uniqueItems:value.uniqueItems&&typeof value.uniqueItems==='object'?value.uniqueItems:{}};}
 function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'null');if(!saved||!saved.player||typeof saved.player!=='object')return emptyGame();const valid=normalizeGameState(saved);if(!valid.purchasedUpgrades.length&&Number(valid.player.tapReward)===50){valid.player.tapReward=300;localStorage.setItem(DEMO_KEY,JSON.stringify(valid));}return valid;}catch{return emptyGame();}}
 function levelForTaps(taps){
   const safeTaps=Math.max(0,Math.floor(Number(taps)||0));
@@ -240,6 +240,18 @@ function demoApi(path,body={}){
     const newLevel=levelForTaps(p.taps).level;
     const bonuses=(Math.floor(p.taps/100)-Math.floor(oldTaps/100))*500;
     p.balance+=p.tapReward*count+bonuses+Math.max(0,newLevel-oldLevel)*25000;
+  }
+
+  else if(path==='/game/claim-starter-pack'){
+    if(game.starterPackClaimed)throw Error('Стартовый набор уже получен.');
+    game.starterPackClaimed=true;game.caseTokens=(game.caseTokens||0)+1;
+  }
+  else if(path==='/game/open-case'){
+    const rewards={bitcoin:{label:'Bitcoin (BTC)',type:'unique'},cash5000000:{label:'5 000 000 ₽',type:'cash',amount:5000000},cash4000000:{label:'4 000 000 ₽',type:'cash',amount:4000000},cash3000000:{label:'3 000 000 ₽',type:'cash',amount:3000000},cash2000000:{label:'2 000 000 ₽',type:'cash',amount:2000000},cash1000000:{label:'1 000 000 ₽',type:'cash',amount:1000000},cash500000:{label:'500 000 ₽',type:'cash',amount:500000},cash100000:{label:'100 000 ₽',type:'cash',amount:100000}};
+    const reward=rewards[body.rewardKey];if(!reward)throw Error('Выбери награду.');
+    if(game.caseTokens>0)game.caseTokens--;else{if(p.balance<5000000)throw Error('Нужно 5 000 000 ₽ или билет из стартового набора.');p.balance-=5000000;}
+    if(reward.type==='cash')p.balance+=reward.amount;else{game.uniqueItems=game.uniqueItems||{};game.uniqueItems.bitcoin=(game.uniqueItems.bitcoin||0)+1;}
+    saveDemo();return {state:game,reward:reward.label};
   }
   else if(path==='/game/guess-number'){
     const guess=Number(body.guess);
@@ -317,10 +329,10 @@ function renderGarage(){
   const labels={unique:"₿ Уникальные предметы",cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
   categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});
   const owned=garageCategory==='unique'?[]:ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
-  $('garageGrid').innerHTML=garageCategory==='unique'?'<article class="case-prize unique"><span>₿</span><h3>Bitcoin (BTC)</h3><p>Предмет из концепции кейса. В этой демоверсии получение и хранение не подключены.</p><small>Уникальный предмет · макет</small></article>':owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
+  $('garageGrid').innerHTML=garageCategory==='unique'?((game.uniqueItems?.bitcoin||0)>0?'<article class="case-prize unique"><span>₿</span><h3>Bitcoin (BTC)</h3><p>Уникальные предметы в коллекции: '+money(game.uniqueItems.bitcoin)+'</p><small>Уникальный предмет</small></article>':'<p class="muted empty-garage">Пока нет уникальных предметов. Выбери Bitcoin в разделе «Кейсы».</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
-function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();}
+function renderAll(){if(!game||!game.player)return;updateDisplay();renderUpgrades();renderBusinesses();renderGarage();}
 function showFireworks(){
  const layer=$('fireworks');if(!layer)return;layer.innerHTML='';
  for(let i=0;i<42;i++){
@@ -602,7 +614,7 @@ start().catch(error => {
 });
 
 
-// Демонстрационная прокрутка кейса: только визуальный макет, без выбора и начисления случайной награды.
+// 
 const casePreviewButton=$('casePreviewButton');
 if(casePreviewButton)casePreviewButton.addEventListener('click',()=>{
  const track=$('caseReelTrack'),status=$('casePreviewStatus');
@@ -611,7 +623,40 @@ if(casePreviewButton)casePreviewButton.addEventListener('click',()=>{
  casePreviewButton.disabled=true;status.textContent='Идёт демонстрация анимации…';
  setTimeout(()=>{track.classList.remove('spinning');track.style.transform='translateX(0)';casePreviewButton.disabled=false;status.textContent='Демо завершено · баланс и инвентарь не изменены';},2900);
 });
-document.querySelectorAll('[data-donate]').forEach(button=>button.addEventListener('click',()=>{
- const status=$('donate'+button.dataset.donate.charAt(0).toUpperCase()+button.dataset.donate.slice(1)+'Status');
- if(status)status.textContent=button.dataset.donate==='starter'?'Набор: фиксированный стартовый бонус · только макет':'Набор: фиксированные косметические предметы · только макет';
+document.querySelectorAll('[data-donate="premium"]').forEach(button=>button.addEventListener('click',()=>{
+ const status=$('donatePremiumStatus');if(status)status.textContent='Премиум-набор пока не продаётся. Платежи не подключены.';
 }));
+
+
+// Крипто-кейс: игрок заранее выбирает гарантированную награду.
+let selectedCaseReward=null;
+const caseChoices=document.getElementById('caseRewardChoices');
+const openCaseButton=$('openCaseButton');
+function updateCaseUI(){
+ const count=$('caseTokenCount');if(count)count.textContent=String(game?.caseTokens||0);
+ if(openCaseButton){openCaseButton.disabled=!selectedCaseReward||busy;openCaseButton.textContent=selectedCaseReward?'Получить выбранную награду':'Выбери награду';}
+}
+if(caseChoices)caseChoices.addEventListener('click',e=>{
+ const choice=e.target.closest('[data-case-reward]');if(!choice)return;
+ selectedCaseReward=choice.dataset.caseReward;
+ caseChoices.querySelectorAll('[data-case-reward]').forEach(x=>x.classList.toggle('selected',x===choice));
+ updateCaseUI();
+});
+if(openCaseButton)openCaseButton.addEventListener('click',async()=>{
+ if(!selectedCaseReward||busy)return;
+ openCaseButton.disabled=true;busy=true;$('casePreviewStatus').textContent='Выдаём выбранную награду…';
+ try{
+  const result=await api('/game/open-case',{rewardKey:selectedCaseReward});
+  game=normalizeGameState(result.state);renderAll();updateCaseUI();
+  $('casePreviewStatus').textContent='Готово! Получено: '+result.reward+'.';
+  selectedCaseReward=null;caseChoices.querySelectorAll('[data-case-reward]').forEach(x=>x.classList.remove('selected'));updateCaseUI();
+ }catch(error){$('casePreviewStatus').textContent=error.message||'Не удалось открыть кейс.';updateCaseUI();}
+ finally{busy=false;updateCaseUI();}
+});
+const starterButton=document.querySelector('[data-donate="starter"]');
+if(starterButton)starterButton.addEventListener('click',async()=>{
+ const status=$('donateStarterStatus');starterButton.disabled=true;status.textContent='Получаем набор…';
+ try{game=normalizeGameState(await api('/game/claim-starter-pack',{}));renderAll();updateCaseUI();status.textContent='Стартовый набор получен: 1 бесплатный билет!';starterButton.textContent='Набор получен ✓';}
+ catch(error){status.textContent=error.message||'Не удалось получить набор.';starterButton.disabled=false;}
+});
+updateCaseUI();
