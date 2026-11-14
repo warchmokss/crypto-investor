@@ -32,6 +32,7 @@ app.use(pinoHttp()); app.use(helmet({ contentSecurityPolicy: false })); app.use(
 app.use(cors({ origin: (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean), credentials: false }));
 app.use(express.json({ limit: '16kb' }));
 app.use('/api/', rateLimit({ windowMs: 60_000, limit: 240, standardHeaders: 'draft-7', legacyHeaders: false, ...(redis ? { store: new RedisStore({ sendCommand: (...args) => redis.call(...args) }) } : {}) }));
+app.use('/api/', (_req,res,next)=>{res.set('Cache-Control','no-store, no-cache, must-revalidate, proxy-revalidate');res.set('Pragma','no-cache');res.set('Expires','0');next();});
 
 function verifyTelegramInitData(initData) {
   if (typeof initData !== 'string' || initData.length > 4096) throw new Error('Telegram initData отсутствует или слишком длинный');
