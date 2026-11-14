@@ -122,9 +122,10 @@ app.get('/api/referral/link',auth,async(req,res,next)=>{try{
  }catch(e){next(e)}});
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
 function levelForTaps(taps){
- let level=1,nextThreshold=100,step=150,total=0;
- while(level<999&&taps>=nextThreshold){total=nextThreshold;level++;nextThreshold+=step;step+=50;}
- return {level,progress:Math.max(0,taps-total),needed:100+(level-1)*50};
+ const safeTaps=Math.max(0,Math.floor(Number(taps)||0));
+ const level=Math.min(999,Math.floor(safeTaps/50)+1);
+ const total=(level-1)*50;
+ return {level,progress:Math.max(0,safeTaps-total),needed:50,nextThreshold:level*50};
 }
 app.post('/api/game/tap',auth,async(req,res,next)=>{try{
  const count=Number(req.body?.count??1);
