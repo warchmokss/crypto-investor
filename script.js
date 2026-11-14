@@ -222,7 +222,7 @@ function loadDemo(){try{const saved=JSON.parse(localStorage.getItem(DEMO_KEY)||'
 function demoApi(path,body={}){
   if(path==='/game/state')return game;
   const p=game.player;
-  if(path==='/game/tap'){p.taps++;p.balance+=p.tapReward+(p.taps%100===0?500:0);}
+  if(path==='/game/tap'){const previousLevel=getLevelInfo(p.taps).level;p.taps++;const nextLevel=getLevelInfo(p.taps).level;const levelReward=Math.max(0,nextLevel-previousLevel)*25000;p.balance+=p.tapReward+(p.taps%100===0?500:0)+levelReward;}
   else if(path==='/game/buy-upgrade'){const u=UPGRADES.find(x=>x.id===body.upgradeId);if(!u)throw Error('Неизвестный апгрейд');if(game.purchasedUpgrades.includes(u.id))throw Error('Апгрейд уже куплен');if(p.balance<u.cost)throw Error('Недостаточно монет');p.balance-=u.cost;p.tapReward=u.tap;game.purchasedUpgrades.push(u.id);}
   else if(path==='/game/buy-asset'){const a=allAssets.find(x=>x.id===body.assetId);if(!a)throw Error('Объект не найден');if(game.owned.includes(a.id))throw Error('Объект уже куплен');if(p.balance<a.cost)throw Error('Недостаточно монет');p.balance-=a.cost;game.owned.push(a.id);}
   else if(path==='/game/sell-asset'){const a=allAssets.find(x=>x.id===body.assetId);if(!a||!game.owned.includes(a.id))throw Error('Объект не найден в собственности');p.balance+=Math.floor(a.cost*.7);game.owned=game.owned.filter(id=>id!==a.id);delete game.propertyLevels[a.id];}
@@ -231,6 +231,7 @@ function demoApi(path,body={}){
 }
 const $=id=>document.getElementById(id);
 const money=n=>Math.floor(n).toLocaleString('ru-RU');
+function getLevelInfo(totalTaps){let remaining=Math.max(0,Math.floor(Number(totalTaps)||0)),level=1,required=100;while(level<999&&remaining>=required){remaining-=required;level++;required+=50;}return {level,progress:level>=999?required:remaining,required};}
 const allAssets=Object.values(ASSETS).flat();
 const getAssetIncome=a=>Math.floor(a.income*(1+(game?.propertyLevels?.[a.id]||0)*.25));
 
@@ -259,10 +260,10 @@ async function api(path,body) {
 function updateDisplay(){
   if(!game)return; const p=game.player;
   $('balance').textContent=money(p.balance);$('tapCount').textContent=money(p.taps);
-  const level=Math.min(999,Math.floor(Number(p.taps||0)/100)+1),progress=level>=999?100:Number(p.taps||0)%100;
+  const levelInfo=getLevelInfo(p.taps||0),level=levelInfo.level,progress=levelInfo.progress;
   const levelName=$('levelName'),levelText=$('levelProgressText'),levelBar=$('levelProgress');
   if(levelName)levelName.textContent='Уровень '+level;
-  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':progress+' / 100 тапов';
+  if(levelText)levelText.textContent=level>=999?'Максимальный уровень':progress+' / '+levelInfo.required+' этапов';
   if(levelBar)levelBar.style.width=progress+'%';
   $('upgradeBalance').textContent=money(p.balance)+' ₽';$('businessBalance').textContent=money(p.balance)+' ₽';$('passiveIncome').textContent=money(game.passiveIncome)+' ₽/мин';
   $('tapButton').querySelector('small').textContent=`+${money(p.tapReward)} ₽ за нажатие`;
