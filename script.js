@@ -349,7 +349,7 @@ function renderBusinesses(){
 function renderGarage(){
   const categories=['cars','apartments','businesses','stalls'];
   const labels={unique:"₿ Уникальные предметы",portfolio:'📈 Мой портфель',cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
-  categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});const uniqueCount=$('garageCountUnique');if(uniqueCount)uniqueCount.textContent=`${Object.values(game.uniqueItems||{}).reduce((sum,n)=>sum+Number(n||0),0)} предметов`;const portfolioCount=$('garageCountPortfolio');if(portfolioCount)portfolioCount.textContent=`${Object.values(marketPortfolio||{}).filter(q=>Number(q)>0).length} активов`;
+  categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});const uniqueCount=$('garageCountUnique');if(uniqueCount)uniqueCount.textContent=`${Object.values(game.uniqueItems||{}).reduce((sum,n)=>sum+Number(n||0),0)} предметов`;const portfolioCount=$('garageCountPortfolio');if(portfolioCount)portfolioCount.textContent=`${Object.values(marketPortfolio||{}).filter(v=>Number(v&&typeof v==='object'?v.quantity:v)>0).length} активов`;
   const owned=['unique','portfolio'].includes(garageCategory)?[]:ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
   if(garageCategory==='portfolio'){renderMarketHoldings();return;}
   $('garageGrid').innerHTML=garageCategory==='unique'?(Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).length?Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).map(([id,count])=>{const item=CASE_ITEMS.find(x=>x.id===id);return item?'<article class="case-prize unique"><span>'+item.icon+'</span><h3>'+item.name+'</h3><p>В коллекции: '+money(count)+'</p><small>'+item.rarity+' · косметический предмет</small><button class="shop-sell" data-unique-sell="'+item.id+'">Продать · '+money(item.sellPrice)+' ₽</button></article>':''}).join(''):'<p class="muted empty-garage">Пока нет уникальных предметов. Открой Стандартный кейс.</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
@@ -641,20 +641,21 @@ const MARKET_ASSETS=[
  {id:'msft',name:'Microsoft',ticker:'MSFT',icon:'🪟',price:41500,group:'Акции'}
 ];
 const MARKET_KEY='crypto-investor-market-demo-v1';
-let marketPrices={},marketChanges={},marketChangeValues={},marketPortfolio={},marketJoined={},marketUpdatedAt=null;
+let marketPrices={},marketChanges={},marketChangeValues={},marketPortfolio={},marketHistory=[],marketJoined={},marketUpdatedAt=null;
 function applyMarketSnapshot(market){
  const assets=Array.isArray(market?.assets)?market.assets:[];
  marketPrices=Object.fromEntries(assets.map(a=>[a.id,Number(a.price)]));
  marketChanges=Object.fromEntries(assets.map(a=>[a.id,Number(a.changePercent)||0]));
  marketChangeValues=Object.fromEntries(assets.map(a=>[a.id,Number(a.changeValue)||0]));
  marketPortfolio=market?.portfolio||{};
+ marketHistory=Array.isArray(market?.history)?market.history:marketHistory;
  marketUpdatedAt=market?.updatedAt||null;
 }
 function loadMarketDemo(){
- try{const v=JSON.parse(localStorage.getItem(MARKET_KEY)||'{}');marketPortfolio=v.portfolio||{};marketJoined=v.joined||{};}catch{marketPortfolio={};marketJoined={};}
+ try{const v=JSON.parse(localStorage.getItem(MARKET_KEY)||'{}');marketPortfolio=v.portfolio||{};marketHistory=Array.isArray(v.history)?v.history:[];marketJoined=v.joined||{};}catch{marketPortfolio={};marketJoined={};}
  MARKET_ASSETS.forEach(a=>{marketPrices[a.id]=a.price;marketChanges[a.id]=0;marketChangeValues[a.id]=0;});
 }
-function saveMarketDemo(){try{localStorage.setItem(MARKET_KEY,JSON.stringify({portfolio:marketPortfolio,joined:marketJoined}));}catch{}}
+function saveMarketDemo(){try{localStorage.setItem(MARKET_KEY,JSON.stringify({portfolio:marketPortfolio,history:marketHistory,joined:marketJoined}));}catch{}}
 async function refreshMarketPrices(){
  const button=$('exchangeRefresh');if(button)button.disabled=true;
  try{
@@ -687,9 +688,11 @@ function renderMarketEstimate(){
  $('marketEstimate').textContent=a&&Number.isFinite(qty)&&qty>0?'Ориентировочная стоимость: '+money((marketPrices[id]||a.price)*qty)+' ₽':'Укажи корректное количество.';
 }
 function renderMarketHoldings(){
- const root=$('marketHoldings');if(!root)return;
+ const root=$('marketHoldings')||$('garageGrid');if(!root)return;
  const entries=Object.entries(marketPortfolio).map(([id,value])=>{const item=value&&typeof value==='object'?value:{quantity:Number(value)||0,averageBuyPrice:0};return [id,item];}).filter(([,item])=>Number(item.quantity)>0);
- root.innerHTML=entries.length?entries.map(([id,item])=>{const a=MARKET_ASSETS.find(x=>x.id===id);if(!a)return '';const qty=Number(item.quantity),avg=Number(item.averageBuyPrice)||0,current=Number(marketPrices[id]||a.price),saleValue=current*qty,costValue=avg*qty,profit=saleValue-costValue,change=Number(marketChanges[id]||0),changeClass=profit>=0?'market-up':'market-down';return '<article class="holding-row"><div class="holding-asset"><span class="holding-coin holding-'+id+'">'+a.icon+'</span><span><b>'+a.name+'</b><small>'+a.ticker+'</small></span></div><div class="holding-quantity"><small>Куплено</small><b>'+qty.toFixed(4)+'</b></div><div class="holding-buy"><small>Средняя цена покупки</small><b>'+(avg>0?money(avg)+' ₽':'нет данных')+'</b></div><div class="holding-sale"><small>Получишь при продаже</small><b>'+money(saleValue)+' ₽</b><small class="'+changeClass+'">'+(avg>0?(profit>=0?'+':'−')+money(Math.abs(profit))+' ₽ · '+(costValue>0?(profit/costValue*100).toFixed(2):'0.00')+'%':'Цена покупки не записана для старой позиции')+'</small></div><button class="shop-sell" type="button" data-market-sell="'+id+'">Продать всё</button></article>';}).join(''):'<p class="muted empty-garage">Портфель пока пуст. Купи активы на вкладке «Биржа» — они появятся здесь.</p>';
+ const holdingsHtml=entries.length?entries.map(([id,item])=>{const a=MARKET_ASSETS.find(x=>x.id===id);if(!a)return '';const qty=Number(item.quantity),avg=Number(item.averageBuyPrice)||0,current=Number(marketPrices[id]||a.price),saleValue=current*qty,costValue=avg*qty,profit=saleValue-costValue,changeClass=profit>=0?'market-up':'market-down';return '<article class="holding-row"><div class="holding-asset"><span class="holding-coin holding-'+id+'">'+a.icon+'</span><span><b>'+a.name+'</b><small>'+a.ticker+'</small></span></div><div class="holding-quantity"><small>Куплено</small><b>'+qty.toFixed(4)+'</b></div><div class="holding-buy"><small>Средняя цена покупки</small><b>'+(avg>0?money(avg)+' ₽':'нет данных')+'</b></div><div class="holding-sale"><small>Получишь при продаже</small><b>'+money(saleValue)+' ₽</b><small class="'+changeClass+'">'+(avg>0?(profit>=0?'+':'−')+money(Math.abs(profit))+' ₽ · '+(costValue>0?(profit/costValue*100).toFixed(2):'0.00')+'%':'Цена покупки не записана для старой позиции')+'</small></div><button class="shop-sell" type="button" data-market-sell="'+id+'">Продать всё</button></article>';}).join(''):'<p class="muted empty-garage">Портфель пока пуст. Купи активы на вкладке «Биржа» — они появятся здесь.</p>';
+ const historyHtml='<section class="portfolio-history"><h3>📜 История покупок и продаж</h3>'+(marketHistory.length?'<div class="portfolio-history-list">'+marketHistory.slice(0,50).map(t=>{const a=MARKET_ASSETS.find(x=>x.id===t.asset_id)||MARKET_ASSETS.find(x=>x.id===t.assetId);const side=t.side==='buy'?'Покупка':'Продажа',cls=t.side==='buy'?'market-up':'market-down',date=t.created_at?new Date(t.created_at).toLocaleString('ru-RU'):'Только что';return '<article class="portfolio-history-row"><span class="holding-coin">'+(a?.icon||'📊')+'</span><div><b>'+(a?.name||t.asset_id)+'</b><small>'+side+' · '+Number(t.quantity).toFixed(4)+' '+(a?.ticker||'')+'</small><small>'+date+'</small></div><strong class="'+cls+'">'+(t.side==='buy'?'−':'+')+money(Number(t.total))+' ₽</strong></article>';}).join('')+'</div>':'<p class="muted">Здесь будут отображаться все покупки и продажи.</p>')+'</section>';
+ root.innerHTML=holdingsHtml+historyHtml;
 }
 async function marketTrade(side){
  const status=$('marketStatus'),a=MARKET_ASSETS.find(x=>x.id===$('marketAsset').value),qty=Number($('marketQuantity').value);
@@ -698,11 +701,11 @@ async function marketTrade(side){
   const price=marketPrices[a.id]||a.price,total=side==='buy'?Math.ceil(price*qty):Math.floor(price*qty),savedHolding=marketPortfolio[a.id],owned=savedHolding&&typeof savedHolding==='object'?Number(savedHolding.quantity)||0:Number(savedHolding)||0;
   if(side==='buy'){
    if(total>game.player.balance){status.textContent='Недостаточно игровых рублей для покупки.';return;}
-   game.player.balance-=total;const prior=marketPortfolio[a.id]&&typeof marketPortfolio[a.id]==='object'?marketPortfolio[a.id]:{quantity:owned,averageBuyPrice:0};marketPortfolio[a.id]={quantity:owned+qty,averageBuyPrice:((owned*(prior.averageBuyPrice||0))+(qty*price))/(owned+qty)};status.textContent='Куплено: '+qty+' '+a.ticker+' за '+money(total)+' игровых ₽.';
+   game.player.balance-=total;marketHistory.unshift({asset_id:a.id,side:'buy',quantity:qty,price,total,created_at:new Date().toISOString()});const prior=marketPortfolio[a.id]&&typeof marketPortfolio[a.id]==='object'?marketPortfolio[a.id]:{quantity:owned,averageBuyPrice:0};marketPortfolio[a.id]={quantity:owned+qty,averageBuyPrice:((owned*(prior.averageBuyPrice||0))+(qty*price))/(owned+qty)};status.textContent='Куплено: '+qty+' '+a.ticker+' за '+money(total)+' игровых ₽.';
   }else{
    if(qty>owned+1e-9){status.textContent='В портфеле недостаточно этого актива.';return;}
    const remaining=Math.max(0,owned-qty);if(remaining<1e-9)delete marketPortfolio[a.id];else{const prior=marketPortfolio[a.id]&&typeof marketPortfolio[a.id]==='object'?marketPortfolio[a.id]:{averageBuyPrice:0};marketPortfolio[a.id]={quantity:remaining,averageBuyPrice:Number(prior.averageBuyPrice)||0};}
-   game.player.balance+=total;status.textContent='Продано: '+qty+' '+a.ticker+'. На баланс зачислено '+money(total)+' игровых ₽.';
+   game.player.balance+=total;marketHistory.unshift({asset_id:a.id,side:'sell',quantity:qty,price,total,created_at:new Date().toISOString()});status.textContent='Продано: '+qty+' '+a.ticker+'. На баланс зачислено '+money(total)+' игровых ₽.';
   }
   saveDemo();saveMarketDemo();renderAll();renderMarket();return;
  }
