@@ -233,3 +233,6 @@ button{touch-action:manipulation}
 .crossword-clue input{background:#100d07;color:#fff;border-color:#9a762b}
 .crossword-clue input.correct-answer{border-color:#e6b83f;background:#3a2b0d}
 .crossword-card .secondary{background:#34260c;color:#ffe4a0}
+
+/* Игра «Угадай число» */
+.guess-card{max-width:620px;text-align:center}.guess-card h2{margin-top:0}.guess-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:24px 0}.guess-btn{min-height:64px;border:1px solid #f5bd3266;border-radius:14px;background:linear-gradient(135deg,#3a2a0b,#171108);color:#ffe08a;font-size:26px;font-weight:900}.guess-btn:hover:not(:disabled){background:linear-gradient(135deg,#ffd34c,#e99a08);color:#1b1304}.guess-btn:disabled{opacity:.5;cursor:not-allowed}.guess-cooldown{font-size:12px;margin-top:18px}@media(max-width:420px){.guess-buttons{gap:6px}.guess-btn{min-height:54px}}
