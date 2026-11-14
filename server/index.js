@@ -302,7 +302,7 @@ app.post('/api/telegram/webhook', async (req,res) => {
     const resetBalance = text.match(/^\/resetbalance(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})$/i);
     const ban = text.match(/^\/ban(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})\s+(навсегда|forever|permanent|\d{1,4}[mhdw])(?:\s+(.+))?$/i);
     const unban = text.match(/^\/unban(?:@\w+)?\s+@?([A-Za-z0-9_]{5,32})$/i);
-    const resetAllProgress = /^\\/resetallprogress(?:@\\w+)?$/i.test(text);
+    const resetAllProgress = /^\/resetallprogress(?:@\w+)?$/i.test(text);
     if (resetAllProgress) {
       if (adminRole !== 'owner') {
         await sendBotMessage(chatId, 'Полный сброс доступен только главному администратору.');
