@@ -81,8 +81,6 @@ async function getState(client,id,applyIncome=true) {
     client.query('SELECT asset_id,level FROM player_assets WHERE telegram_id=$1',[id]),
     client.query('SELECT tokens FROM player_case_tokens WHERE telegram_id=$1',[id]),
     client.query('SELECT item_id,quantity FROM player_unique_items WHERE telegram_id=$1',[id]),
-    client.query('SELECT usd,eur FROM player_bank_accounts WHERE telegram_id=$1',[id]),
-    client.query('SELECT club_id,currency,level FROM player_football_clubs WHERE telegram_id=$1',[id]),
     client.query("SELECT 2 AS tap_multiplier, (((NOW() AT TIME ZONE 'Europe/Moscow')::time >= TIME '22:00') AND ((NOW() AT TIME ZONE 'Europe/Moscow')::time < TIME '23:00')) AS active, CASE WHEN (((NOW() AT TIME ZONE 'Europe/Moscow')::time >= TIME '22:00') AND ((NOW() AT TIME ZONE 'Europe/Moscow')::time < TIME '23:00')) THEN ((date_trunc('day', NOW() AT TIME ZONE 'Europe/Moscow') + INTERVAL '23 hours') AT TIME ZONE 'Europe/Moscow') ELSE ((date_trunc('day', NOW() AT TIME ZONE 'Europe/Moscow') + CASE WHEN (NOW() AT TIME ZONE 'Europe/Moscow')::time < TIME '22:00' THEN INTERVAL '22 hours' ELSE INTERVAL '46 hours' END) AT TIME ZONE 'Europe/Moscow') END AS expires_at")
   ]);
   const bankRow=await client.query('INSERT INTO player_bank_accounts(telegram_id) VALUES($1) ON CONFLICT(telegram_id) DO UPDATE SET telegram_id=EXCLUDED.telegram_id RETURNING usd,eur',[id]);
