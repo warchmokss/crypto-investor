@@ -89,11 +89,23 @@ async function getState(client,id,applyIncome=true) {
   const footballClubs=clubRows.map(x=>({id:x.club_id,currency:x.currency,level:Number(x.level)}));
   const levels=Object.fromEntries(assets.rows.map(x=>[x.asset_id,x.level]));
   const income=assets.rows.reduce((sum,x)=>{const a=ALL_ASSETS.find(z=>z.id===x.asset_id);return sum+(a?getIncome(a,x.level):0)},0);
-  if (applyIncome) {
+  const clubIncome={USD:0,EUR:0};
+  for(const row of clubRows){
+    const club=FOOTBALL_CLUBS.find(x=>x.id===row.club_id);
+    if(club&&['USD','EUR'].includes(row.currency)){
+      clubIncome[row.currency]+=Math.floor(club.income*(1+Number(row.level)*0.25)*2.5);
+    }
+  }
+  if(applyIncome){
     const elapsed=Math.min(MAX_OFFLINE_MINUTES,Math.max(0,(Date.now()-new Date(p.last_income_at).getTime())/60000));
     const earned=Math.floor(income*elapsed);
-    if(earned>0) await client.query('UPDATE players SET balance=balance+$2,last_income_at=NOW(),updated_at=NOW() WHERE telegram_id=$1',[id,earned]);
-    else await client.query('UPDATE players SET last_income_at=NOW() WHERE telegram_id=$1',[id]);
+    const earnedUsd=Math.floor(clubIncome.USD*elapsed*100)/100;
+    const earnedEur=Math.floor(clubIncome.EUR*elapsed*100)/100;
+    await client.query('UPDATE players SET balance=balance+$2,last_income_at=NOW(),updated_at=NOW() WHERE telegram_id=$1',[id,earned]);
+    if(earnedUsd>0||earnedEur>0){
+      await client.query('UPDATE player_bank_accounts SET usd=usd+$2,eur=eur+$3 WHERE telegram_id=$1',[id,earnedUsd,earnedEur]);
+      bank.usd+=earnedUsd;bank.eur+=earnedEur;
+    }
     p.balance=Number(p.balance)+earned;
   }
   return { player:{telegramId:String(p.telegram_id),username:p.username,firstName:p.first_name,balance:Number(p.balance),taps:Number(p.taps),tapReward:p.tap_reward}, owned:assets.rows.map(x=>x.asset_id), purchasedUpgrades:up.rows.map(x=>x.upgrade_id), propertyLevels:levels, passiveIncome:income, bank, footballClubs, clubPassiveIncome:clubIncome, caseTokens:Number(caseRow.rows[0]?.tokens||0), uniqueItems:Object.fromEntries(uniqueRows.rows.map(x=>[x.item_id,Number(x.quantity)])), globalTapBoost:boostRow.rows[0]?{active:boostRow.rows[0].active===true,multiplier:Number(boostRow.rows[0].tap_multiplier),expiresAt:boostRow.rows[0].expires_at}:{active:false,multiplier:1,expiresAt:null} };
