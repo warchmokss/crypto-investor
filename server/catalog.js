@@ -219,6 +219,29 @@ export const ASSETS = {
     {id:'apt50',name:"Особняк",icon:"\ud83c\udfe0",cost:3211047636,income:9633143,description:"Недвижимость для сдачи в аренду и пассивного дохода."}
   ]
 };
+export const FOOTBALL_CLUBS = [
+  {id:'club_zenit',name:'Зенит',icon:'⚽',costUsd:8000000000,costEur:8695652174,income:8000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_spartak',name:'Спартак Москва',icon:'🔴',costUsd:7000000000,costEur:7608695652,income:7000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_krasnodar',name:'Краснодар',icon:'🟢',costUsd:6000000000,costEur:6521739130,income:6000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_cska',name:'ЦСКА Москва',icon:'🔴',costUsd:5500000000,costEur:5978260870,income:5500000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_dynamo',name:'Динамо Москва',icon:'🔵',costUsd:4500000000,costEur:4891304348,income:4500000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_lokomotiv',name:'Локомотив Москва',icon:'🟢',costUsd:4000000000,costEur:4347826087,income:4000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_rubin',name:'Рубин',icon:'🔴',costUsd:3000000000,costEur:3260869565,income:3000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_rostov',name:'Ростов',icon:'🟡',costUsd:2500000000,costEur:2717391304,income:2500000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_baltika',name:'Балтика',icon:'🔵',costUsd:1800000000,costEur:1956521739,income:1800000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_krylia',name:'Крылья Советов',icon:'🟢',costUsd:1000000000,costEur:1086956522,income:1000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_real',name:'Реал Мадрид',icon:'👑',costUsd:30000000000,costEur:32608695652,income:30000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_barcelona',name:'Барселона',icon:'🔵',costUsd:25000000000,costEur:27173913043,income:25000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_manchester_united',name:'Манчестер Юнайтед',icon:'🔴',costUsd:20000000000,costEur:21739130435,income:20000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_psg',name:'Пари Сен-Жермен',icon:'🔵',costUsd:18000000000,costEur:19565217391,income:18000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_manchester_city',name:'Манчестер Сити',icon:'🩵',costUsd:17000000000,costEur:18478260870,income:17000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_liverpool',name:'Ливерпуль',icon:'🔴',costUsd:16000000000,costEur:17391304348,income:16000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_juventus',name:'Ювентус',icon:'⚫',costUsd:15000000000,costEur:16304347826,income:15000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_bayern',name:'Бавария',icon:'🔴',costUsd:14000000000,costEur:15217391304,income:14000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_chelsea',name:'Челси',icon:'🔵',costUsd:13000000000,costEur:14130434783,income:13000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_arsenal',name:'Арсенал',icon:'🔴',costUsd:12000000000,costEur:13043478261,income:12000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
+  {id:'club_el_vanto',name:'Эль Ванто',icon:'🛡️',costUsd:5000000000,costEur:5434782609,income:5000000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'}
+];
 export const ALL_ASSETS = Object.values(ASSETS).flat();
 // Общий множитель пассивного дохода для всех типов активов.
 export const getIncome = (asset, level=0) => Math.floor(asset.income * (1 + level * 0.25) * 2.5);
