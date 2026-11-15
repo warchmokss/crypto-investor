@@ -63,6 +63,7 @@
         <p class="muted">Развивай империю: нажимай, повышай уровень, открывай бизнес и улучшай игровые активы.</p>
       </div>
 
+      <section class="exchange-card daily-reward-card"><h2>🎁 Ежедневная награда</h2><p class="muted">Заходи 10 дней подряд и получай по 50 000 игровых ₽ каждый день.</p><div id="dailyProgress" class="muted">Загружаем серию входов…</div><button id="dailyClaim" class="game-action" type="button" disabled>Забрать 50 000 ₽</button><small id="dailyStatus" class="muted" aria-live="polite"></small></section>
       <div class="level-card" aria-live="polite"><div><b id="levelName">Уровень 1</b><span id="levelProgressText">0 / 200 тапов</span></div><div class="level-track"><i id="levelProgress"></i></div></div>
 
       <div class="balance-card">
@@ -243,25 +244,25 @@
       <div class="hero">
         <p class="eyebrow">СОРЕВНОВАНИЯ ИГРОКОВ</p>
         <h1>Игровые <span>турниры</span></h1>
-        <p class="muted">Участвуй в демо-соревнованиях, выполняй задания и сравнивай результаты с другими игроками.</p>
+        <p class="muted">Вступай в общие серверные турниры. Рейтинг формируется по игровым данным участников.</p>
       </div>
       <div class="tournament-grid">
         <article class="tournament-card">
-          <div class="tournament-icon">👆</div><span class="demo-pill">ДЕМО-ТУРНИР</span>
+          <div class="tournament-icon">👆</div><span class="demo-pill">ОНЛАЙН-ТУРНИР</span>
           <h2>Марафон тапов</h2><p>Набери больше нажатий за время турнира.</p>
           <b id="tapTournamentScore">Твой результат: 0 тапов</b>
           <button class="game-action tournament-join" data-tournament="taps" type="button">Участвовать</button>
           <small id="tapTournamentStatus">Участие пока не начато.</small>
         </article>
         <article class="tournament-card">
-          <div class="tournament-icon">🏢</div><span class="demo-pill">ДЕМО-ТУРНИР</span>
+          <div class="tournament-icon">🏢</div><span class="demo-pill">ОНЛАЙН-ТУРНИР</span>
           <h2>Бизнес-магнат</h2><p>Развивай имущество и сравнивай стоимость своей империи.</p>
           <b id="assetTournamentScore">Твой результат: 0 объектов</b>
           <button class="game-action tournament-join" data-tournament="assets" type="button">Участвовать</button>
           <small id="assetTournamentStatus">Участие пока не начато.</small>
         </article>
         <article class="tournament-card">
-          <div class="tournament-icon">💰</div><span class="demo-pill">ДЕМО-ТУРНИР</span>
+          <div class="tournament-icon">💰</div><span class="demo-pill">ОНЛАЙН-ТУРНИР</span>
           <h2>Капиталист</h2><p>Покажи самый высокий игровой баланс.</p>
           <b id="balanceTournamentScore">Твой результат: 0 ₽</b>
           <button class="game-action tournament-join" data-tournament="balance" type="button">Участвовать</button>
@@ -269,10 +270,10 @@
         </article>
       </div>
       <div class="exchange-card tournament-leaderboard">
-        <h2>🏆 Демо-рейтинг турниров</h2>
+        <h2>🏆 Общий онлайн-рейтинг</h2>
         <div id="tournamentLeaderboard" class="leaderboard-list"></div>
       </div>
-      <p class="game-disclaimer">Турниры демонстрационные: без денежных и виртуальных ставок, без потери баланса и без реальных призов.</p>
+      <p class="game-disclaimer">Рейтинг обновляется по данным игроков, вступивших в соответствующий турнир.</p>
     </section>
 
     <section id="about" class="page">
