@@ -262,6 +262,26 @@ const FOOTBALL_CLUBS = [
   {id:'club_arsenal',name:'Арсенал',icon:'🔴',costUsd:12000000000,costEur:11020408163,income:12000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
   {id:'club_el_vanto',name:'Эль Ванто',icon:'🛡️',costUsd:5000000000,costEur:4591836735,income:5000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'}
 ];
+const CLUB_LOGOS = {
+ club_zenit:'FC Zenit 1 star 2015 logo.png',
+ club_spartak:'FC Spartak Moscow Logo 2022.jpg',
+ club_krylia:'Futbolny klub «Krylia Sovetov» Samara (logo).svg',
+ club_rostov:'FK Rostov Logo.png',
+ club_baltika:'BaltykaFCLogo2018.png',
+ club_real:'Real Madrid CF.svg',
+ club_barcelona:'FC Barcelona (crest).svg',
+ club_manchester_united:'Manchester United F.C. logo.svg',
+ club_psg:'Paris Saint-Germain F.C..svg',
+ club_manchester_city:'Manchester City FC badge.svg',
+ club_liverpool:'Liverpool FC.svg',
+ club_juventus:'Juventus Turin.svg',
+ club_bayern:'Bayern Munich logo.png',
+ club_chelsea:'Chelsea FC.svg',
+ club_arsenal:'Arsenal FC.svg'
+};
+function clubLogoUrl(id){const file=CLUB_LOGOS[id];return file?'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(file):'';}
+function clubBadge(club){const url=clubLogoUrl(club.id);return url?'<div class="club-crest"><img src="'+url+'" alt="Эмблема '+club.name+'" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add(\'club-crest-fallback\');this.remove();"></div>':'<div class="club-crest club-crest-fallback" aria-label="Эмблема '+club.name+'">'+club.icon+'</div>';}
+
 let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false, adminRole=null, adminTelegramId=null;
 const DEMO_KEY='crypto-investor-demo-v1';
 function saveDemo(){if(demoMode&&game)localStorage.setItem(DEMO_KEY,JSON.stringify(game));}
@@ -381,7 +401,7 @@ function renderPropertyUpgrades(){
 function renderBusinesses(){
   if(activeCategory==='football'){
     $('businessGrid').innerHTML=FOOTBALL_CLUBS.map(club=>{const owned=game.footballClubs.find(x=>x.id===club.id),usd=money(club.costUsd),eur=money(club.costEur),income=money(club.income/1000000*(1+(owned?.level||0)*.25)*2.5);
-      return `<article class="shop-card football-club-card"><div class="club-crest">${club.icon}</div><h3>${club.name}</h3><p>${club.description}</p><div class="item-income">Цена: $${money(club.costUsd/1000000000)} млрд / €${money(club.costEur/1000000000)} млрд<br>Доход: +${income} млн ${owned?.currency||'USD'}/мин</div>${owned?`<p>Уровень: <b>${owned.level}/5</b></p><div class="trade-actions"><button class="shop-buy" data-upgrade-club="${club.id}" ${owned.level>=5?'disabled':''}>Улучшить +25%</button><button class="shop-sell" data-sell-club="${club.id}">Продать · 70%</button></div>`:`<div class="trade-actions"><button class="shop-buy" data-buy-club="${club.id}" data-currency="USD">Купить за $${usd}</button><button class="shop-buy" data-buy-club="${club.id}" data-currency="EUR">Купить за €${eur}</button></div>`}</article>`;
+      return `<article class="shop-card football-club-card">${clubBadge(club)}<h3>${club.name}</h3><p>${club.description}</p><div class="item-income">Цена: $${money(club.costUsd/1000000000)} млрд / €${money(club.costEur/1000000000)} млрд<br>Доход: +${income} млн ${owned?.currency||'USD'}/мин</div>${owned?`<p>Уровень: <b>${owned.level}/5</b></p><div class="trade-actions"><button class="shop-buy" data-upgrade-club="${club.id}" ${owned.level>=5?'disabled':''}>Улучшить +25%</button><button class="shop-sell" data-sell-club="${club.id}">Продать · 70%</button></div>`:`<div class="trade-actions"><button class="shop-buy" data-buy-club="${club.id}" data-currency="USD">Купить за $${usd}</button><button class="shop-buy" data-buy-club="${club.id}" data-currency="EUR">Купить за €${eur}</button></div>`}</article>`;
     }).join('');
     renderGarage();renderPropertyUpgrades();return;
   }
@@ -399,7 +419,7 @@ function renderGarage(){
   const labels={football:'⚽ Футбольные клубы',unique:"₿ Уникальные предметы",portfolio:'📈 Мой портфель',cars:'🚗 Автомобили',apartments:'🏠 Недвижимость',businesses:'🏢 Собственность',stalls:'🛍️ Торговые площадки'};
   const footballCount=$('garageCountFootball');if(footballCount)footballCount.textContent=`${(game.footballClubs||[]).length} клубов`;categories.forEach(k=>{const count=ASSETS[k].filter(a=>game.owned.includes(a.id)).length;const el=$('garageCount'+k[0].toUpperCase()+k.slice(1));if(el)el.textContent=`${count} объектов`;});const uniqueCount=$('garageCountUnique');if(uniqueCount)uniqueCount.textContent=`${Object.values(game.uniqueItems||{}).reduce((sum,n)=>sum+Number(n||0),0)} предметов`;const portfolioCount=$('garageCountPortfolio');if(portfolioCount)portfolioCount.textContent=`${Object.values(marketPortfolio||{}).filter(v=>Number(v&&typeof v==='object'?v.quantity:v)>0).length} активов`;
   const owned=['unique','portfolio','football'].includes(garageCategory)?[]:ASSETS[garageCategory].filter(a=>game.owned.includes(a.id));$('garageTitle').textContent=labels[garageCategory];
-  if(garageCategory==='portfolio'){renderMarketHoldings();return;}if(garageCategory==='football'){$('garageGrid').innerHTML=(game.footballClubs||[]).map(x=>{const club=FOOTBALL_CLUBS.find(c=>c.id===x.id);return club?`<article class="shop-card football-club-card"><div class="club-crest">${club.icon}</div><h3>${club.name}</h3><p>Уровень: ${x.level}/5 · Валюта дохода: ${x.currency}</p><div class="item-income">+${money(club.income*(1+x.level*.25)*2.5)} ${x.currency}/мин</div><button class="shop-sell" data-sell-club="${x.id}">Продать · 70%</button></article>`:''}).join('')||'<p class="muted">Футбольных клубов пока нет.</p>';return;}
+  if(garageCategory==='portfolio'){renderMarketHoldings();return;}if(garageCategory==='football'){$('garageGrid').innerHTML=(game.footballClubs||[]).map(x=>{const club=FOOTBALL_CLUBS.find(c=>c.id===x.id);return club?`<article class="shop-card football-club-card">${clubBadge(club)}<h3>${club.name}</h3><p>Уровень: ${x.level}/5 · Валюта дохода: ${x.currency}</p><div class="item-income">+${money(club.income*(1+x.level*.25)*2.5)} ${x.currency}/мин</div><button class="shop-sell" data-sell-club="${x.id}">Продать · 70%</button></article>`:''}).join('')||'<p class="muted">Футбольных клубов пока нет.</p>';return;}
   $('garageGrid').innerHTML=garageCategory==='unique'?(Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).length?Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).map(([id,count])=>{const item=CASE_ITEMS.find(x=>x.id===id);return item?'<article class="case-prize unique"><span>'+item.icon+'</span><h3>'+item.name+'</h3><p>В коллекции: '+money(count)+'</p><small>'+item.rarity+' · косметический предмет</small><button class="shop-sell" data-unique-sell="'+item.id+'">Продать · '+money(item.sellPrice)+' ₽</button></article>':''}).join(''):'<p class="muted empty-garage">Пока нет уникальных предметов. Открой Стандартный кейс.</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
