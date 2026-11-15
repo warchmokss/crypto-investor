@@ -287,3 +287,6 @@ button{touch-action:manipulation}
 .global-tap-boost[hidden]{display:none}
 .global-tap-boost strong{font-size:24px;line-height:1.1;font-weight:900}.global-tap-boost span{font-size:17px}.global-tap-boost small{font-size:11px;color:#fff0b9;font-variant-numeric:tabular-nums}
 @media(max-width:380px){.tap-stage{width:100%;max-width:260px}.global-tap-boost{right:-2px;top:18px;width:58px;min-height:70px}}
+
+/* Банк и футбольные клубы */
+.bank-balances{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}.bank-balances .info-card{padding:18px}.bank-balances b{font-size:1.25rem}.bank-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end}.bank-form label{display:grid;gap:7px;color:var(--muted,#aab7cc);font-size:.9rem}.bank-form select,.bank-form input{width:100%;min-width:0;padding:12px;border-radius:10px;border:1px solid #29415f;background:#0b1b31;color:#fff}.club-crest{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px;background:linear-gradient(145deg,#1a3557,#0b1729);border:1px solid #54759a;font-size:2rem}.football-club-card{text-align:center}.football-club-card .trade-actions{display:grid;gap:8px}.football-club-card .shop-buy{white-space:normal}
