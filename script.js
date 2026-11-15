@@ -426,7 +426,11 @@ function renderGarage(){
 function renderBank(){
  const bank=game?.bank||{usd:0,eur:0};
  $('bankRUB').textContent=money(game?.player?.balance||0)+' ₽';
- $('bankUSD').textContent=Number(bank.usd||0).toLocaleString('ru-RU',{maximumFractionDigits:2})+' 
+ $('bankUSD').textContent=Number(bank.usd||0).toLocaleString('ru-RU',{maximumFractionDigits:2})+' $';
+ $('bankEUR').textContent=Number(bank.eur||0).toLocaleString('ru-RU',{maximumFractionDigits:2})+' €';
+ $('bankIncome').textContent='Доход клубов: '+money(game?.clubPassiveIncome?.USD||0)+' $/мин · '+money(game?.clubPassiveIncome?.EUR||0)+' €/мин';
+ renderBankPreview();
+}
 function renderAll(){
  if(!game||!game.player)return;
  updateDisplay();renderBank();renderUpgrades();renderBusinesses();renderGarage();
@@ -882,24 +886,10 @@ if(starterButton)starterButton.addEventListener('click',async()=>{
 updateCaseUI();
 
 
-// Запускаем игру только после объявления всех игровых данных и обработчиков.
-start().catch(error => {
-  stopConnectionTimer();
-  const status = document.getElementById('saveStatus');
-  if (status) {
-    status.textContent = 'Ошибка запуска игры: ' + (error?.message || 'неизвестная ошибка');
-    status.style.color = '#ff7777';
-  }
-});
-;
- $('bankEUR').textContent=Number(bank.eur||0).toLocaleString('ru-RU',{maximumFractionDigits:2})+' €';
- $('bankIncome').textContent='Доход клубов: '+money(game?.clubPassiveIncome?.USD||0)+' $/мин · '+money(game?.clubPassiveIncome?.EUR||0)+' €/мин';
- renderBankPreview();
-}
 function renderBankPreview(){
  const preview=$('bankPreview');if(!preview)return;
  const from=$('bankFrom').value,to=$('bankTo').value,amount=Number($('bankAmount').value);
- const rates={RUB:1,USD:90,EUR:98},symbols={RUB:'₽',USD:'
+ const rates={RUB:1,USD:90,EUR:98},symbols={RUB:'₽',USD:'$',EUR:'€'};
 function renderAll(){
  if(!game||!game.player)return;
  updateDisplay();renderBank();renderUpgrades();renderBusinesses();renderGarage();
@@ -1351,16 +1341,6 @@ if(starterButton)starterButton.addEventListener('click',async()=>{
 updateCaseUI();
 
 
-// Запускаем игру только после объявления всех игровых данных и обработчиков.
-start().catch(error => {
-  stopConnectionTimer();
-  const status = document.getElementById('saveStatus');
-  if (status) {
-    status.textContent = 'Ошибка запуска игры: ' + (error?.message || 'неизвестная ошибка');
-    status.style.color = '#ff7777';
-  }
-});
-,EUR:'€'};
  if(from===to){preview.textContent='Выбери разные валюты для обмена.';return;}
  if(!Number.isFinite(amount)||amount<=0){preview.textContent='Сумма к получению появится здесь после ввода суммы.';return;}
  const received=to==='RUB'?Math.floor(amount*rates[from]):Math.floor(amount*rates[from]/rates[to]*100)/100;
