@@ -240,27 +240,27 @@ const ASSETS = {
   ]
 };
 const FOOTBALL_CLUBS = [
-  {id:'club_zenit',name:'Зенит',icon:'⚽',costUsd:8000000000,costEur:8695652174,income:8000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_spartak',name:'Спартак Москва',icon:'🔴',costUsd:7000000000,costEur:7608695652,income:7000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_krasnodar',name:'Краснодар',icon:'🟢',costUsd:6000000000,costEur:6521739130,income:6000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_cska',name:'ЦСКА Москва',icon:'🔴',costUsd:5500000000,costEur:5978260870,income:5500000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_dynamo',name:'Динамо Москва',icon:'🔵',costUsd:4500000000,costEur:4891304348,income:4500000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_lokomotiv',name:'Локомотив Москва',icon:'🟢',costUsd:4000000000,costEur:4347826087,income:4000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_rubin',name:'Рубин',icon:'🔴',costUsd:3000000000,costEur:3260869565,income:3000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_rostov',name:'Ростов',icon:'🟡',costUsd:2500000000,costEur:2717391304,income:2500000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_baltika',name:'Балтика',icon:'🔵',costUsd:1800000000,costEur:1956521739,income:1800000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_krylia',name:'Крылья Советов',icon:'🟢',costUsd:1000000000,costEur:1086956522,income:1000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_real',name:'Реал Мадрид',icon:'👑',costUsd:30000000000,costEur:32608695652,income:30000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_barcelona',name:'Барселона',icon:'🔵',costUsd:25000000000,costEur:27173913043,income:25000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_manchester_united',name:'Манчестер Юнайтед',icon:'🔴',costUsd:20000000000,costEur:21739130435,income:20000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_psg',name:'Пари Сен-Жермен',icon:'🔵',costUsd:18000000000,costEur:19565217391,income:18000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_manchester_city',name:'Манчестер Сити',icon:'🩵',costUsd:17000000000,costEur:18478260870,income:17000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_liverpool',name:'Ливерпуль',icon:'🔴',costUsd:16000000000,costEur:17391304348,income:16000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_juventus',name:'Ювентус',icon:'⚫',costUsd:15000000000,costEur:16304347826,income:15000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_bayern',name:'Бавария',icon:'🔴',costUsd:14000000000,costEur:15217391304,income:14000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_chelsea',name:'Челси',icon:'🔵',costUsd:13000000000,costEur:14130434783,income:13000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_arsenal',name:'Арсенал',icon:'🔴',costUsd:12000000000,costEur:13043478261,income:12000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
-  {id:'club_el_vanto',name:'Эль Ванто',icon:'🛡️',costUsd:5000000000,costEur:5434782609,income:5000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'}
+  {id:'club_zenit',name:'Зенит',icon:'⚽',costUsd:8000000000,costEur:7346938776,income:8000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_spartak',name:'Спартак Москва',icon:'🔴',costUsd:7000000000,costEur:6428571429,income:7000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_krasnodar',name:'Краснодар',icon:'🟢',costUsd:6000000000,costEur:5510204082,income:6000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_cska',name:'ЦСКА Москва',icon:'🔴',costUsd:5500000000,costEur:5051020408,income:5500000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_dynamo',name:'Динамо Москва',icon:'🔵',costUsd:4500000000,costEur:4132653061,income:4500000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_lokomotiv',name:'Локомотив Москва',icon:'🟢',costUsd:4000000000,costEur:3673469388,income:4000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_rubin',name:'Рубин',icon:'🔴',costUsd:3000000000,costEur:2755102041,income:3000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_rostov',name:'Ростов',icon:'🟡',costUsd:2500000000,costEur:2295918367,income:2500000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_baltika',name:'Балтика',icon:'🔵',costUsd:1800000000,costEur:1653061224,income:1800000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_krylia',name:'Крылья Советов',icon:'🟢',costUsd:1000000000,costEur:918367347,income:1000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_real',name:'Реал Мадрид',icon:'👑',costUsd:30000000000,costEur:27551020408,income:30000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_barcelona',name:'Барселона',icon:'🔵',costUsd:25000000000,costEur:22959183673,income:25000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_manchester_united',name:'Манчестер Юнайтед',icon:'🔴',costUsd:20000000000,costEur:18367346939,income:20000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_psg',name:'Пари Сен-Жермен',icon:'🔵',costUsd:18000000000,costEur:16530612245,income:18000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_manchester_city',name:'Манчестер Сити',icon:'🩵',costUsd:17000000000,costEur:15612244898,income:17000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_liverpool',name:'Ливерпуль',icon:'🔴',costUsd:16000000000,costEur:14693877551,income:16000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_juventus',name:'Ювентус',icon:'⚫',costUsd:15000000000,costEur:13775510204,income:15000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_bayern',name:'Бавария',icon:'🔴',costUsd:14000000000,costEur:12857142857,income:14000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_chelsea',name:'Челси',icon:'🔵',costUsd:13000000000,costEur:11938775510,income:13000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_arsenal',name:'Арсенал',icon:'🔴',costUsd:12000000000,costEur:11020408163,income:12000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'},
+  {id:'club_el_vanto',name:'Эль Ванто',icon:'🛡️',costUsd:5000000000,costEur:4591836735,income:5000000,description:'Футбольный клуб · доход начисляется в валюте покупки.'}
 ];
 let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false, adminRole=null, adminTelegramId=null;
 const DEMO_KEY='crypto-investor-demo-v1';
@@ -311,7 +311,7 @@ function demoApi(path,body={}){
   else if(path==='/bank/exchange'){
     const rates={RUB:1,USD:90,EUR:98},from=body.from,to=body.to,amount=Number(body.amount);
     if(!rates[from]||!rates[to]||from===to||!Number.isFinite(amount)||amount<=0||(from==='RUB'&&!Number.isSafeInteger(amount)))throw Error('Проверь сумму и валюты.');
-    const converted=Math.floor(amount*rates[from]/rates[to]*100)/100;
+    const converted=to==='RUB'?Math.floor(amount*rates[from]):Math.floor(amount*rates[from]/rates[to]*100)/100;
     if(from==='RUB'){if(p.balance<amount)throw Error('Недостаточно игровых рублей.');p.balance-=amount;}else{if(game.bank[from.toLowerCase()]<amount)throw Error('Недостаточно средств в банке.');game.bank[from.toLowerCase()]-=amount;}
     if(to==='RUB')p.balance+=converted;else game.bank[to.toLowerCase()]+=converted;
   }
