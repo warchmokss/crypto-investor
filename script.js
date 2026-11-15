@@ -129,7 +129,10 @@ const ASSETS = {
     {id:'biz47',name:"Производственный цех",icon:"\ud83c\udfe2",cost:2057182308,income:6171547,description:"Прибыльное предприятие с регулярным игровым доходом."},
     {id:'biz48',name:"Типография",icon:"\ud83c\udfe2",cost:2386331477,income:7158994,description:"Прибыльное предприятие с регулярным игровым доходом."},
     {id:'biz49',name:"Рекламное агентство",icon:"\ud83c\udfe2",cost:2768144514,income:8304434,description:"Прибыльное предприятие с регулярным игровым доходом."},
-    {id:'biz50',name:"IT-студия",icon:"\ud83c\udfe2",cost:3211047636,income:9633143,description:"Прибыльное предприятие с регулярным игровым доходом."}
+    {id:'biz50',name:"IT-студия",icon:"\ud83c\udfe2",cost:3211047636,income:9633143,description:"Прибыльное предприятие с регулярным игровым доходом."},
+    {id:'biz51',name:"Магнит",icon:"🏢",cost:52000000000,income:21000000,description:"Крупная сеть продуктовых магазинов с игровым доходом."},
+    {id:'biz52',name:"Пятёрочка",icon:"🏢",cost:60000000000,income:22000000,description:"Сеть супермаркетов с игровым доходом."},
+    {id:'biz53',name:"Вейп-завод",icon:"🏭",cost:96000000000,income:47000000,description:"Производственное предприятие с игровым доходом."}
   ],
   stalls: [
     {id:'stall1',name:"Торговый павильон",icon:"\ud83c\udfea",cost:2000000,income:6000,description:"Небольшая торговая точка с постоянным потоком покупателей."},
@@ -345,7 +348,7 @@ function renderBusinesses(){
   const items=ASSETS[activeCategory].filter(a=>a.visible!==false);
   $('businessGrid').innerHTML=items.map((a,index)=>{
     const bought=game.owned.includes(a.id),resale=Math.floor(a.cost*.7);
-    const photo=activeCategory==='cars'?(a.image||CAR_PHOTOS[index%CAR_PHOTOS.length]):null;
+    const carIndex=ASSETS.cars.findIndex(car=>car.id===a.id);const photo=carIndex>=0?(a.image||CAR_PHOTOS[carIndex%CAR_PHOTOS.length]):null;
     const visual=photo?`<div class="shop-vehicle"><img src="${photo}" alt="${a.name}" loading="lazy"></div>`:`<div class="shop-icon">${a.icon}</div>`;
     return `<article class="shop-card">${visual}<h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Цена: ${money(a.cost)} ₽ · Доход: +${money(a.income)} ₽/мин</div><div class="trade-actions"><button class="shop-buy" data-asset="${a.id}" ${bought||game.player.balance<a.cost?'disabled':''}>${bought?'Куплено ✓':`Купить · ${money(a.cost)} ₽`}</button>${bought?`<button class="shop-sell" data-sell="${a.id}">Продать · ${money(resale)} ₽</button>`:''}</div></article>`;
   }).join('');
