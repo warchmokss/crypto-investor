@@ -338,7 +338,7 @@ app.post('/api/game/buy-upgrade',auth,async(req,res,next)=>{try{
 app.post('/api/bank/exchange',auth,async(req,res,next)=>{try{
  const from=String(req.body?.from||''),to=String(req.body?.to||''),amount=Number(req.body?.amount);
  const rates={RUB:1,USD:90,EUR:98};
- if(!['RUB','USD','EUR'].includes(from)||!['RUB','USD','EUR'].includes(to)||from===to||!Number.isFinite(amount)||amount<=0||amount>1e15||Math.round(amount*100)!==amount*100)throw Object.assign(new Error('Проверь валюту и сумму обмена.'),{status:400});
+ if(!['RUB','USD','EUR'].includes(from)||!['RUB','USD','EUR'].includes(to)||from===to||!Number.isFinite(amount)||amount<=0||amount>1e15||Math.round(amount*100)!==amount*100||(from==='RUB'&&!Number.isSafeInteger(amount)))throw Object.assign(new Error('Проверь валюту и сумму обмена.'),{status:400});
  const converted=Math.floor(amount*rates[from]/rates[to]*100)/100;
  const state=await transaction(async c=>{await getState(c,req.playerId,false);await c.query('INSERT INTO player_bank_accounts(telegram_id) VALUES($1) ON CONFLICT DO NOTHING',[req.playerId]);
   if(from==='RUB'){const q=await c.query('UPDATE players SET balance=balance-$2 WHERE telegram_id=$1 AND balance >= $2 RETURNING balance',[req.playerId,Math.ceil(amount)]);if(!q.rowCount)throw Object.assign(new Error('Недостаточно игровых рублей.'),{status:400});}
