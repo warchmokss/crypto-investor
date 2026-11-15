@@ -404,7 +404,20 @@ function renderGarage(){
   $('garageGrid').innerHTML=garageCategory==='unique'?(Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).length?Object.entries(game.uniqueItems||{}).filter(([id,count])=>Number(count)>0).map(([id,count])=>{const item=CASE_ITEMS.find(x=>x.id===id);return item?'<article class="case-prize unique"><span>'+item.icon+'</span><h3>'+item.name+'</h3><p>В коллекции: '+money(count)+'</p><small>'+item.rarity+' · косметический предмет</small><button class="shop-sell" data-unique-sell="'+item.id+'">Продать · '+money(item.sellPrice)+' ₽</button></article>':''}).join(''):'<p class="muted empty-garage">Пока нет уникальных предметов. Открой Стандартный кейс.</p>'):owned.length?owned.map(a=>`<article class="shop-card"><div class="shop-vehicle">${a.image?`<img src="${a.image}" alt="${a.name}" loading="lazy">`:`<img src="https://images.unsplash.com/photo-1614218018881-61a0a8019771?auto=format&fit=crop&w=900&q=75" alt="${a.name}" loading="lazy">`}</div><h3>${a.name}</h3><p>${a.description}</p><div class="item-income">Доход: +${money(getAssetIncome(a))} ₽/мин</div><button class="shop-sell" data-garage-sell="${a.id}">Продать · ${money(Math.floor(a.cost*.7))} ₽</button></article>`).join(''):'<p class="muted empty-garage">В этом разделе пока ничего нет. Купи объект во вкладке «Бизнес» — он появится здесь автоматически.</p>';
 }
 
-function renderBank(){const b=game?.bank||{usd:0,eur:0};$('bankRUB').textContent=money(game?.player?.balance||0)+' ₽';$('bankUSD').textContent=Number(b.usd||0).toLocaleString('ru-RU',{maximumFractionDigits:2})+' renderUpgrades();renderBusinesses();renderGarage();if(typeof updateCaseUI==='function')updateCaseUI();if(typeof renderTournaments==='function')renderTournaments();if(typeof renderMarket==='function'&&$('exchange')?.classList.contains('active'))renderMarket();}
+function renderBank(){
+ const bank=game?.bank||{usd:0,eur:0};
+ $('bankRUB').textContent=money(game?.player?.balance||0)+' ₽';
+ $('bankUSD').textContent=Number(bank.usd||0).toLocaleString('ru-RU',{maximumFractionDigits:2})+' $';
+ $('bankEUR').textContent=Number(bank.eur||0).toLocaleString('ru-RU',{maximumFractionDigits:2})+' €';
+ $('bankIncome').textContent='Доход клубов: '+money(game?.clubPassiveIncome?.USD||0)+' $/мин · '+money(game?.clubPassiveIncome?.EUR||0)+' €/мин';
+}
+function renderAll(){
+ if(!game||!game.player)return;
+ updateDisplay();renderBank();renderUpgrades();renderBusinesses();renderGarage();
+ if(typeof updateCaseUI==='function')updateCaseUI();
+ if(typeof renderTournaments==='function')renderTournaments();
+ if(typeof renderMarket==='function'&&$('exchange')?.classList.contains('active'))renderMarket();
+}
 function showFireworks(){
  const layer=$('fireworks');if(!layer)return;layer.innerHTML='';
  for(let i=0;i<42;i++){
