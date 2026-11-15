@@ -48,7 +48,7 @@ function verifyTelegramInitData(initData) {
   if (a.length !== b.length || !timingSafeEqual(a,b)) throw new Error('Не удалось подтвердить аккаунт Telegram');
   const user = JSON.parse(params.get('user') || 'null');
   if (!user?.id || !Number.isSafeInteger(Number(user.id))) throw new Error('В initData нет корректного пользователя');
-  return { id: String(user.id), username: user.username || null, firstName: user.first_name || 'Игрок' };
+  const startParam=params.get('start_param')||''; const refMatch=startParam.match(/^ref_(\d+)$/); return { id: String(user.id), username: user.username || null, firstName: user.first_name || 'Игрок', referrerId: refMatch&&refMatch[1]!==String(user.id)?refMatch[1]:null };
 }
 function makeSession(user) {
   const payload = Buffer.from(JSON.stringify({ sub:user.id, exp:Date.now()+7*86400000 })).toString('base64url');
@@ -107,15 +107,16 @@ app.post('/api/auth/telegram', async (req,res,next)=>{ try {
   if(ban.rowCount) throw Object.assign(new Error(ban.rows[0].expires_at ? 'Аккаунт заблокирован до '+new Date(ban.rows[0].expires_at).toLocaleString('ru-RU')+'.' : 'Аккаунт заблокирован навсегда.'),{status:403});
   await transaction(async c=>{
     const created=await c.query(`INSERT INTO players(telegram_id,username,first_name,balance) VALUES($1,$2,$3,100000) ON CONFLICT(telegram_id) DO NOTHING RETURNING telegram_id`,[user.id,user.username,user.firstName]);
+    if(user.referrerId) await c.query('INSERT INTO player_referrals(referred_telegram_id,referrer_telegram_id) VALUES($1,$2) ON CONFLICT(referred_telegram_id) DO NOTHING',[user.id,user.referrerId]);
     if(!created.rowCount){
       await c.query('UPDATE players SET username=$2,first_name=$3,updated_at=NOW() WHERE telegram_id=$1',[user.id,user.username,user.firstName]);
       await c.query('DELETE FROM player_referrals WHERE referred_telegram_id=$1 AND rewarded_at IS NULL',[user.id]);
     } else {
       const referral=(await c.query('SELECT referrer_telegram_id FROM player_referrals WHERE referred_telegram_id=$1 AND rewarded_at IS NULL FOR UPDATE',[user.id])).rows[0];
       if(referral && String(referral.referrer_telegram_id)!==String(user.id)){
-        const credited=await c.query('UPDATE players SET balance=balance+20000,updated_at=NOW() WHERE telegram_id=$1 RETURNING telegram_id',[referral.referrer_telegram_id]);
+        const credited=await c.query('UPDATE players SET balance=balance+100000,updated_at=NOW() WHERE telegram_id=$1 RETURNING telegram_id',[referral.referrer_telegram_id]);
         if(credited.rowCount){
-          await c.query('UPDATE players SET balance=balance+20000,updated_at=NOW() WHERE telegram_id=$1',[user.id]);
+          await c.query('UPDATE players SET balance=balance+100000,updated_at=NOW() WHERE telegram_id=$1',[user.id]);
           await c.query('UPDATE player_referrals SET rewarded_at=NOW() WHERE referred_telegram_id=$1',[user.id]);
         } else {
           await c.query('DELETE FROM player_referrals WHERE referred_telegram_id=$1',[user.id]);
