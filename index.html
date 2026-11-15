@@ -47,6 +47,7 @@
       <button class="nav-btn active" data-page="home"><span class="nav-icon">▶</span><span>Играть</span></button>
       <button class="nav-btn" data-page="business"><span class="nav-icon">▣</span><span>Бизнес</span></button>
       <button class="nav-btn" data-page="garage"><span class="nav-icon">⌂</span><span>Гараж</span></button>
+      <button class="nav-btn" data-page="bank"><span class="nav-icon">🏦</span><span>Банк</span></button>
       <button class="nav-btn" data-page="cases"><span class="nav-icon">🎁</span><span>Кейсы</span></button>
       <button class="nav-btn" data-page="donate"><span class="nav-icon">⭐</span><span>Донат</span></button>
       <button class="nav-btn" data-page="transfers"><span class="nav-icon">♧</span><span>Друзья</span></button>
@@ -110,11 +111,13 @@
         <button class="category-btn" data-category="businesses">🏢 Бизнесы</button>
         <button class="category-btn" data-category="stalls">🛍️ Прилавки</button>
         <button class="category-btn" data-category="apartments">🏠 Квартиры</button>
+        <button class="category-btn" data-category="football">⚽ Футбольные клубы</button>
       </div>
       <div id="businessGrid" class="shop-grid"></div>
       <p class="muted trade-note">Продажа возвращает 70% первоначальной стоимости. Доход от актива начисляется, пока он у тебя.</p>
     </section>
 
+    <section id="bank" class="page"><div class="hero"><p class="eyebrow">ВАЛЮТНЫЙ СЧЁТ</p><h1>Игровой <span>банк</span></h1><p class="muted">Меняй игровые рубли на доллары и евро. Курс фиксированный и действует только внутри игры.</p></div><div class="bank-balances"><article class="info-card"><h3>₽ Рубли</h3><b id="bankRUB">0 ₽</b></article><article class="info-card"><h3>💵 Доллары</h3><b id="bankUSD">0 $</b></article><article class="info-card"><h3>💶 Евро</h3><b id="bankEUR">0 €</b></article></div><section class="exchange-card"><h2>Обмен валюты</h2><p class="muted">1 $ = 90 игровых ₽ · 1 € = 98 игровых ₽</p><div class="bank-form"><label>Откуда<select id="bankFrom"><option value="RUB">Рубли ₽</option><option value="USD">Доллары $</option><option value="EUR">Евро €</option></select></label><label>Куда<select id="bankTo"><option value="USD">Доллары $</option><option value="EUR">Евро €</option><option value="RUB">Рубли ₽</option></select></label><label>Сумма<input id="bankAmount" type="number" min="0.01" step="0.01" placeholder="Например, 9000"></label><button class="game-action" id="bankExchange" type="button">Обменять</button></div><small id="bankStatus" class="muted" aria-live="polite"></small><p id="bankIncome" class="muted"></p></section></section>
     <section id="cases" class="page">
       <div class="hero"><p class="eyebrow">КОЛЛЕКЦИЯ НАГРАД</p><h1>Стандартный <span>кейс</span></h1><p class="muted">Открывай кейс и собирай случайные уникальные косметические предметы. Каждый предмет попадёт в гараж.</p></div>
       <div class="case-showcase">
@@ -139,6 +142,7 @@
         <button class="garage-tile" data-garage="apartments"><span>🏠</span><b>Недвижимость</b><small id="garageCountApartments">0 объектов</small></button>
         <button class="garage-tile" data-garage="businesses"><span>🏢</span><b>Собственность</b><small id="garageCountBusinesses">0 объектов</small></button>
         <button class="garage-tile" data-garage="stalls"><span>🛍️</span><b>Торговые площадки</b><small id="garageCountStalls">0 объектов</small></button>
+        <button class="garage-tile" data-garage="football"><span>⚽</span><b>Футбольные клубы</b><small id="garageCountFootball">0 клубов</small></button>
         <button class="garage-tile" data-garage="unique"><span>₿</span><b>Уникальные предметы</b><small id="garageCountUnique">0 предметов</small></button>
         <button class="garage-tile" data-garage="portfolio"><span>📈</span><b>Мой портфель</b><small id="garageCountPortfolio">0 активов</small></button>
       </div>
