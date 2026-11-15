@@ -280,7 +280,7 @@ const CLUB_LOGOS = {
  club_arsenal:'Arsenal FC.svg'
 };
 function clubLogoUrl(id){const file=CLUB_LOGOS[id];return file?'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(file):'';}
-function clubBadge(club){const url=clubLogoUrl(club.id);return url?'<div class="club-crest"><img src="'+url+'" alt="Эмблема '+club.name+'" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add(\'club-crest-fallback\');this.remove();"></div>':'<div class="club-crest club-crest-fallback" aria-label="Эмблема '+club.name+'">'+club.icon+'</div>';}
+function clubBadge(club){if(club.id==='club_el_vanto')return '<div class="club-crest el-vanto-crest" role="img" aria-label="Авторская эмблема Эль Ванто">EV</div>';const url=clubLogoUrl(club.id);return url?'<div class="club-crest"><img src="'+url+'" alt="Эмблема '+club.name+'" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add(\'club-crest-fallback\');this.remove();"></div>':'<div class="club-crest club-crest-fallback" aria-label="Эмблема '+club.name+'">'+club.icon+'</div>';}
 
 let token=null, game=null, demoMode=false, activeCategory='cars', garageCategory='cars', busy=false, isAdmin=false, adminRole=null, adminTelegramId=null;
 const DEMO_KEY='crypto-investor-demo-v1';
