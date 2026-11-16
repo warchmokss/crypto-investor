@@ -218,7 +218,7 @@ app.post('/api/expenses/pay',auth,async(req,res,next)=>{try{
  const result=await transaction(async c=>{
   const state=await getState(c,req.playerId);
   const billId=String(req.body?.billId||'');
-  if(!/^\\d{1,18}$/.test(billId))throw Object.assign(new Error('Некорректный номер счёта.'),{status:400});
+  if(!/^\d{1,18}$/.test(billId))throw Object.assign(new Error('Некорректный номер счёта.'),{status:400});
   const bill=(await c.query("SELECT id,amount,paid_at FROM player_expense_bills WHERE id=$1 AND telegram_id=$2 FOR UPDATE",[billId,req.playerId])).rows[0];
   if(!bill)throw Object.assign(new Error('Счёт не найден.'),{status:404});
   if(bill.paid_at)throw Object.assign(new Error('Этот счёт уже оплачен.'),{status:409});
