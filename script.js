@@ -635,7 +635,8 @@ if(adminCreditButton)adminCreditButton.addEventListener('click',async()=>{
   } catch(e){status.textContent=e.message||'Не удалось начислить игровые рубли.';}
   finally{btn.disabled=false;}
 });
-document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));btn.classList.add('active');$(btn.dataset.page).classList.add('active');if(btn.dataset.page==='leaders')renderLeaderboard(leaderboardType);if(btn.dataset.page==='bank')renderBank();}));
+document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));btn.classList.add('active');const target=$(btn.dataset.page);if(target)target.classList.add('active');if(btn.dataset.page==='leaders')renderLeaderboard(leaderboardType);if(btn.dataset.page==='bank')renderBank();}));
+document.querySelectorAll('[data-store-panel]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-store-panel]').forEach(x=>x.classList.toggle('active',x===btn));document.querySelectorAll('.store-panel').forEach(panel=>panel.classList.toggle('active',panel.id===btn.dataset.storePanel));if(btn.dataset.storePanel==='fortune')loadFortuneCooldown();}));
 $('upgradeGrid')?.addEventListener('click',e=>{const b=e.target.closest('[data-upgrade]');if(b)action(()=>api('/game/buy-upgrade',{upgradeId:b.dataset.upgrade}),'Апгрейд куплен!');});
 $('businessCategories')?.addEventListener('click',e=>{const b=e.target.closest('[data-category]');if(!b)return;activeCategory=b.dataset.category;document.querySelectorAll('.category-btn').forEach(x=>x.classList.toggle('active',x===b));renderBusinesses();});
 $('businessGrid')?.addEventListener('click',e=>{const sell=e.target.closest('[data-sell]');if(sell){if(confirm('Продать этот объект за 70% его цены?'))action(()=>api('/game/sell-asset',{assetId:sell.dataset.sell}),'Объект продан!');return;}const b=e.target.closest('[data-asset]');if(b)action(()=>api('/game/buy-asset',{assetId:b.dataset.asset}),'Поздравляем с покупкой!');});
@@ -679,27 +680,6 @@ tapButton?.addEventListener('click',e=>{e.preventDefault();const r=tapButton.get
 
 
 
-let fortuneSpinning=false;
-const fortunePrizes=[500000000,100000000,50000000,10000000,5000000,2000000,1000000,500000,100000,50000];
-$('fortuneSpinButton')?.addEventListener('click',async()=>{
- const button=$('fortuneSpinButton'),result=$('fortuneResult'),wheel=$('fortuneWheel');
- if(fortuneSpinning||busy||!game)return;
- if(Number(game.player.balance)<50000000){result.textContent='Недостаточно средств: нужно 50 000 000 ₽.';return;}
- fortuneSpinning=true;button.disabled=true;button.textContent='Колесо крутится…';result.textContent='Колесо выбирает случайный приз…';
- try{
-  const outcome=await api('/game/spin-fortune',{});
-  const prize=Number(outcome.prize),index=fortunePrizes.indexOf(prize);
-  if(index<0)throw new Error('Сервер вернул неизвестный приз.');
-  game=normalizeGameState(outcome.state);renderAll();
-  const angle=360*6+(360-(index*36+18));
-  wheel.style.transition='none';wheel.style.transform='rotate(0deg)';void wheel.offsetWidth;
-  wheel.style.transition='transform 5s cubic-bezier(.12,.72,.12,1)';
-  wheel.style.transform='rotate('+angle+'deg)';
-  await new Promise(resolve=>setTimeout(resolve,5100));
-  result.textContent='🎉 Выпало: '+money(prize)+' ₽! Баланс: '+money(game.player.balance)+' ₽.';
- }catch(error){result.textContent=error.message||'Не удалось прокрутить колесо.';}
- finally{fortuneSpinning=false;button.disabled=false;button.textContent='Крутить · 50 000 000 ₽';}
-});
 $('charityDonate')?.addEventListener('click',async()=>{const amount=Math.floor(Number($('charityAmount').value)),status=$('charityStatus'),btn=$('charityDonate');if(!Number.isSafeInteger(amount)||amount<1){status.textContent='Укажи целую сумму в рублях больше нуля.';return;}if(!game||amount>game.player.balance){status.textContent='Недостаточно игровых рублей.';return;}if(demoMode){game.player.balance-=amount;game.charityDonatedRub=(game.charityDonatedRub||0)+amount;saveDemo();renderAll();$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub)+' ₽';$('charityAmount').value='';status.textContent='Пожертвовано '+money(amount)+' игровых ₽. Демо-режим: только на этом устройстве.';return;}btn.disabled=true;status.textContent='Оформляем пожертвование…';try{const result=await api('/game/donate',{amount});game=normalizeGameState(result.state);renderAll();$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub)+' ₽';$('charityAmount').value='';status.textContent='Пожертвование '+money(amount)+' ₽ успешно внесено в игровой фонд!';await renderCharityStats();}catch(e){status.textContent=e.message||'Не удалось оформить пожертвование.';}finally{btn.disabled=false;}});
 async function renderCharityStats(){const total=$('charityGlobalTotal');if(!total)return;if(demoMode){total.textContent='Демо: '+money(game?.charityDonatedRub||0)+' ₽';return;}try{const data=await api('/charity/stats');total.textContent=money(data.totalDonatedRub||0)+' ₽';}catch{total.textContent='Не удалось загрузить';}}
 document.querySelector('[data-page="charity"]')?.addEventListener('click',async()=>{if(!game)return;$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub||0)+' ₽';await renderCharityStats();});
@@ -926,7 +906,7 @@ const fortuneSpinControl=$('fortuneSpinButton'),fortuneStatusText=$('fortuneResu
 function updateFortuneCooldownUI(){if(!fortuneSpinControl)return;if(fortuneWheelBusy){fortuneSpinControl.disabled=true;fortuneSpinControl.textContent='Колесо вращается…';return;}if(demoMode||!token){fortuneSpinControl.disabled=false;fortuneSpinControl.textContent='Крутить колесо';return;}fortuneSpinControl.disabled=fortuneRemainingSeconds>0;if(fortuneRemainingSeconds>0){const m=Math.floor(fortuneRemainingSeconds/60),s=fortuneRemainingSeconds%60;fortuneSpinControl.textContent='Следующее вращение через '+m+':'+String(s).padStart(2,'0');}else fortuneSpinControl.textContent='Крутить колесо · бесплатно';}
 async function loadFortuneCooldown(){if(!fortuneSpinControl||demoMode||!token){updateFortuneCooldownUI();return;}try{const state=await api('/fortune/state');fortuneRemainingSeconds=Math.max(0,Number(state.remainingSeconds)||0);updateFortuneCooldownUI();if(fortuneRemainingSeconds>0&&fortuneStatusText)fortuneStatusText.textContent='Бесплатное вращение будет доступно через '+Math.ceil(fortuneRemainingSeconds/60)+' мин.';}catch(error){if(fortuneStatusText)fortuneStatusText.textContent=error.message||'Не удалось проверить время следующего вращения.';}}
 if(fortuneSpinControl)fortuneSpinControl.addEventListener('click',async()=>{if(fortuneWheelBusy||fortuneRemainingSeconds>0)return;if(demoMode||!token){if(fortuneStatusText)fortuneStatusText.textContent='Открой игру через Telegram, чтобы сохранить игровую награду.';return;}fortuneWheelBusy=true;updateFortuneCooldownUI();try{const result=await api('/fortune/spin',{});const index=Number(result.index),reward=Number(result.reward);if(!Number.isInteger(index)||index<0||index>=fortuneRewardSequence.length||fortuneRewardSequence[index]!==reward)throw new Error('Сервер вернул некорректную награду.');fortuneRotation+=360*5+(360/fortuneRewardSequence.length)*(index+0.5);fortuneWheelElement.style.transform='rotate('+fortuneRotation+'deg)';await new Promise(resolve=>setTimeout(resolve,4100));game=normalizeGameState(result.state);renderAll();fortuneCenterElement.textContent=money(reward)+' ₽';fortuneRemainingSeconds=480;if(fortuneStatusText)fortuneStatusText.textContent='Начислено '+money(reward)+' игровых ₽. Следующее вращение — через 8 минут.';}catch(error){const seconds=Number(error.remainingSeconds)||0;if(seconds>0)fortuneRemainingSeconds=seconds;if(fortuneStatusText)fortuneStatusText.textContent=error.message||'Не удалось выполнить вращение.';}finally{fortuneWheelBusy=false;updateFortuneCooldownUI();}});
-if(fortuneSpinControl){loadFortuneCooldown();setInterval(()=>{if(fortuneRemainingSeconds>0){fortuneRemainingSeconds--;updateFortuneCooldownUI();}},1000);document.querySelector('[data-page="fortune"]')?.addEventListener('click',loadFortuneCooldown);}
+if(fortuneSpinControl){loadFortuneCooldown();setInterval(()=>{if(fortuneRemainingSeconds>0){fortuneRemainingSeconds--;updateFortuneCooldownUI();}},1000);document.querySelector('[data-store-panel="fortune"]')?.addEventListener('click',loadFortuneCooldown);}
 
 // Запускаем игру только после объявления всех игровых данных и обработчиков.
 start().catch(error => {
