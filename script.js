@@ -296,6 +296,28 @@ function levelForTaps(taps){
 }
 function demoApi(path,body={}){
   if(path==='/game/state')return game;
+  if(path==='/expenses/state'){
+    const now=new Date(),today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+    game.expenses=Array.isArray(game.expenses)?game.expenses:[];
+    if(game.expensesDate!==today){
+      const add=(kind,amount,description)=>game.expenses.push({id:'demo-'+kind+'-'+today,kind,amount,description,dueDate:today,paidAt:null});
+      const ownedValue=game.owned.reduce((sum,id)=>sum+(allAssets.find(a=>a.id===id)?.cost||0),0);
+      add('utilities',Math.max(5000,Math.floor((game.player.balance||0)*0.0003+ownedValue*0.00008)),'Коммунальные платежи за предприятия и недвижимость');
+      if(Math.random()<.35)add('traffic',500000+Math.floor(Math.random()*4500001),'Случайный штраф за нарушение ПДД');
+      if(game.owned.some(id=>id==='biz47'||id==='biz53')&&Math.random()<.25)add('ecology',5000000+Math.floor(Math.random()*195000001),'Экологический штраф для производства');
+      if((game.owned.length||game.footballClubs?.length)&&Math.random()<.22)add('tax',Math.max(1000000,Math.floor((game.player.balance||0)*.001)),'Начисление по результатам налоговой проверки');
+      if(game.footballClubs?.length)add('club_upkeep',Math.max(100000,Math.floor(game.footballClubs.length*250000)),'Содержание футбольных клубов, стадионов и персонала');
+      game.expensesDate=today;saveDemo();
+    }
+    return {state:game,bills:game.expenses,balance:game.player.balance};
+  }
+  if(path==='/expenses/pay'){
+    const bill=game.expenses?.find(x=>String(x.id)===String(body.billId));
+    if(!bill||bill.paidAt)throw Error('Счёт не найден или уже оплачен.');
+    if(game.player.balance<bill.amount)throw Error('Недостаточно игровых рублей для оплаты этого счёта.');
+    game.player.balance-=bill.amount;bill.paidAt=new Date().toISOString();saveDemo();
+    return {state:game,paid:bill.amount};
+  }
   const p=game.player;
   if(path==='/game/tap'){
     const count=Number(body.count??1);
@@ -440,6 +462,32 @@ function renderBank(){
  $('bankIncome').textContent='Доход клубов: '+money(game?.clubPassiveIncome?.USD||0)+' $/мин · '+money(game?.clubPassiveIncome?.EUR||0)+' €/мин';
  renderBankPreview();
 }
+function renderExpenses(data){
+ const bills=Array.isArray(data?.bills)?data.bills:[];
+ const open=bills.filter(x=>!x.paidAt);
+ const total=open.reduce((sum,x)=>sum+(Number(x.amount)||0),0);
+ if($('expensesBalance'))$('expensesBalance').textContent=money(game?.player?.balance||0)+' ₽';
+ if($('expensesDueTotal'))$('expensesDueTotal').textContent=money(total)+' ₽';
+ if($('expensesDueCount'))$('expensesDueCount').textContent=String(open.length);
+ const list=$('expensesList');if(!list)return;
+ const icons={traffic:'🚗',ecology:'🌱',tax:'🏛️',club_upkeep:'⚽',utilities:'💡'};
+ const names={traffic:'Штраф за ПДД',ecology:'Экологический штраф',tax:'Налоговая проверка',club_upkeep:'Содержание футбольных клубов',utilities:'Коммунальные платежи'};
+ list.innerHTML=bills.length?bills.map(x=>{const paid=!!x.paidAt;return '<article class="expense-row '+(paid?'expense-paid':'')+'"><div class="expense-row-icon">'+(icons[x.kind]||'🧾')+'</div><div class="expense-row-main"><b>'+ (names[x.kind]||'Игровой счёт')+'</b><p>'+x.description+'</p><small>'+ (paid?'Оплачено':'К оплате')+' · '+(x.dueDate||'')+'</small></div><div class="expense-row-side"><strong>'+money(x.amount)+' ₽</strong>'+(paid?'<span class="expense-paid-label">Оплачено ✓</span>':'<button class="shop-buy" data-pay-expense="'+x.id+'" '+((game?.player?.balance||0)<x.amount?'disabled':'')+'>Оплатить</button>')+'</div></article>';}).join(''):'<p class="muted">Пока начислений нет. Новые счета появятся по игровым правилам.</p>';
+}
+async function loadExpenses(){
+ const status=$('expensesStatus');if(status)status.textContent='Обновляем счета…';
+ try{const data=await api('/expenses/state');game=normalizeGameState(data.state);renderAll();renderExpenses(data);if(status)status.textContent='Счета обновлены. Ничего не списывается без твоего нажатия.';}
+ catch(e){if(status)status.textContent=e.message||'Не удалось загрузить счета.';}
+}
+$('expensesList')?.addEventListener('click',async e=>{
+ const btn=e.target.closest('[data-pay-expense]');if(!btn||btn.disabled||busy)return;
+ if(!confirm('Оплатить игровой счёт на '+money(Number(btn.dataset.amount||btn.closest('.expense-row')?.querySelector('strong')?.textContent?.replace(/[^0-9]/g,'')))+' ₽?'))return;
+ busy=true;btn.disabled=true;
+ try{const result=await api('/expenses/pay',{billId:btn.dataset.payExpense});game=normalizeGameState(result.state);renderAll();await loadExpenses();}
+ catch(err){const status=$('expensesStatus');if(status)status.textContent=err.message||'Не удалось оплатить счёт.';btn.disabled=false;}
+ finally{busy=false;}
+});
+document.querySelector('[data-page="expenses"]')?.addEventListener('click',loadExpenses);
 function renderAll(){
  if(!game||!game.player)return;
  updateDisplay();renderBank();renderUpgrades();renderBusinesses();renderGarage();
