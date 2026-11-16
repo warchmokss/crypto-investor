@@ -414,9 +414,42 @@ app.get('/api/leaderboard',auth,async(req,res,next)=>{try{
    .slice(0,100).map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name||'Игрок',assetsValue:x.assetsValue}));
   return res.json({type:'assets',players});
  }
- const r=await pool.query(`SELECT username,first_name,balance FROM players
-  WHERE balance > 0 ORDER BY balance DESC,telegram_id ASC LIMIT 100`);
- res.json({type:'balance',players:r.rows.map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name||'Игрок',balance:Number(x.balance)}))});
+ // Forbes: деньги + всё имущество + валютные счета + биржевой портфель + коллекционные предметы.
+ const [playersRows,assetRows,clubRows,bankRows,holdingRows,uniqueRows]=await Promise.all([
+  pool.query('SELECT telegram_id,username,first_name,balance FROM players'),
+  pool.query('SELECT telegram_id,asset_id,level FROM player_assets'),
+  pool.query('SELECT telegram_id,club_id,currency,level FROM player_football_clubs'),
+  pool.query('SELECT telegram_id,usd,eur FROM player_bank_accounts'),
+  pool.query('SELECT telegram_id,asset_id,quantity FROM player_market_holdings'),
+  pool.query('SELECT telegram_id,item_id,quantity FROM player_unique_items')
+ ]);
+ const totals=new Map();
+ for(const p of playersRows.rows) totals.set(String(p.telegram_id),{
+  username:p.username,first_name:p.first_name,wealth:Number(p.balance)||0
+ });
+ const add=(id,value)=>{const row=totals.get(String(id));if(row)row.wealth+=Number(value)||0;};
+ const assetValues=new Map(ALL_ASSETS.map(a=>[a.id,a]));
+ for(const row of assetRows.rows){
+  const asset=assetValues.get(row.asset_id);if(!asset)continue;
+  const cost=Number(asset.cost)||0,level=Number(row.level)||0;
+  add(row.telegram_id,cost+level*Math.max(1000,Math.floor(cost*.2)));
+ }
+ const clubValues=new Map(FOOTBALL_CLUBS.map(c=>[c.id,c]));
+ for(const row of clubRows.rows){
+  const club=clubValues.get(row.club_id);if(!club)continue;
+  const base=row.currency==='USD'?Number(club.costUsd):Number(club.costEur);
+  const rate=row.currency==='USD'?90:98;
+  add(row.telegram_id,(base+Number(row.level||0)*Math.max(1,Math.floor(base*.2)))*rate);
+ }
+ for(const row of bankRows.rows) add(row.telegram_id,Number(row.usd||0)*90+Number(row.eur||0)*98);
+ const snapshot=getMarketSnapshot(),prices=new Map(snapshot.assets.map(a=>[a.id,Number(a.price)||0]));
+ for(const row of holdingRows.rows) add(row.telegram_id,(Number(row.quantity)||0)*(prices.get(row.asset_id)||0));
+ const itemValues=new Map(CASE_ITEMS.map(item=>[item.id,Number(item.sellPrice)||0]));
+ for(const row of uniqueRows.rows) add(row.telegram_id,(Number(row.quantity)||0)*(itemValues.get(row.item_id)||0));
+ const players=[...totals.values()].filter(x=>x.wealth>0)
+  .sort((a,b)=>b.wealth-a.wealth)
+  .slice(0,100).map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name||'Игрок',wealth:Math.round(x.wealth)}));
+ res.json({type:'balance',players});
 }catch(e){next(e)} });
 
 // // Владелец имеет полный доступ. Дополнительный администратор может начислять
