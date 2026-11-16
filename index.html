@@ -177,6 +177,16 @@
         <button class="game-action" id="transferSend">Отправить перевод</button>
         <p id="transferStatus" class="game-result" aria-live="polite">Проверяй юзернейм перед отправкой.</p>
       </div>
+      <div class="exchange-card">
+        <h2>🏢 Подарить бизнес другу</h2>
+        <p class="muted">Выбери один из принадлежащих тебе бизнесов и укажи Telegram username получателя. Передача бесплатная: бизнес перейдёт другу вместе с уровнем улучшения.</p>
+        <label class="game-label" for="giftBusinessSelect">Твой бизнес</label>
+        <select class="exchange-input" id="giftBusinessSelect"><option value="">Сначала купи бизнес</option></select>
+        <label class="game-label" for="giftBusinessUsername">Юзернейм друга</label>
+        <input class="exchange-input" id="giftBusinessUsername" type="text" maxlength="32" placeholder="@username" autocomplete="off">
+        <button class="game-action" id="giftBusinessSend" type="button" disabled>Подарить бизнес</button>
+        <p id="giftBusinessStatus" class="game-result" aria-live="polite">Подарить можно только бизнес, которым ты владеешь. Получатель должен хотя бы один раз войти в игру.</p>
+      </div>
       <p class="game-disclaimer">Переводятся только игровые рубли внутри этого приложения. Это не банковский перевод и не перевод реальных денег. Для работы между разными Telegram-аккаунтами нужен запущенный сервер приложения и зарегистрированный получатель.</p>
     </section>
 
