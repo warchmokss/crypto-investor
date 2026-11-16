@@ -319,7 +319,7 @@ function demoApi(path,body={}){
     return {state:game,paid:bill.amount};
   }
   if(path==='/risk/state'){const last=Number(game.riskLastSpinAt)||0;const remainingSeconds=Math.max(0,Math.ceil((last+86400000-Date.now())/1000));return {remainingSeconds,canSpin:remainingSeconds===0,cooldownSeconds:86400};}
-  if(path==='/risk/spin'){const last=Number(game.riskLastSpinAt)||0;if(Date.now()-last<86400000)throw Error('Бесплатный раунд будет доступен позже.');const outcomes=[5000000,-500000,2000000,-1000000,1000000,-2000000,0,-5000000],index=Math.floor(Math.random()*outcomes.length),planned=outcomes[index],delta=planned<0?-Math.min(game.player.balance,Math.abs(planned)):planned;game.player.balance=Math.max(0,game.player.balance+delta);game.riskLastSpinAt=Date.now();saveDemo();return {state:game,delta,index,cooldownSeconds:86400};}
+  if(path==='/risk/spin'){const last=Number(game.riskLastSpinAt)||0;if(Date.now()-last<86400000)throw Error('Бесплатный раунд будет доступен позже.');const outcomes=[5000000,-500000,2000000,-1000000,1000000,-2000000,0,-5000000,-100000000,-250000000,-500000000],index=Math.floor(Math.random()*outcomes.length),planned=outcomes[index],delta=planned<0?-Math.min(game.player.balance,Math.abs(planned)):planned;game.player.balance=Math.max(0,game.player.balance+delta);game.riskLastSpinAt=Date.now();saveDemo();return {state:game,delta,index,cooldownSeconds:86400};}
   const p=game.player;
   if(path==='/game/tap'){
     const count=Number(body.count??1);
