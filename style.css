@@ -311,3 +311,10 @@ button{touch-action:manipulation}
 .fortune-wheel-center{position:absolute;left:50%;top:50%;display:grid;place-items:center;width:76px;height:76px;transform:translate(-50%,-50%);border:5px solid #f4c65e;border-radius:50%;background:linear-gradient(145deg,#1d3555,#071326);color:#ffd166;font-size:30px;font-weight:900;box-shadow:0 3px 14px #0009;z-index:2}
 .fortune-spin-button{min-width:min(100%,300px);font-weight:900}
 .fortune-hint{max-width:440px;text-align:center;margin:0}
+
+/* Колесо фортуны: 13 секторов и таймер бесплатной попытки. */
+.fortune-wheel{background:conic-gradient(#d99b2b 0deg 27.692307692307693deg,#244d78 27.692307692307693deg 55.38461538461539deg,#d99b2b 55.38461538461539deg 83.07692307692308deg,#244d78 83.07692307692308deg 110.76923076923077deg,#d99b2b 110.76923076923077deg 138.46153846153845deg,#244d78 138.46153846153845deg 166.15384615384616deg,#d99b2b 166.15384615384616deg 193.84615384615384deg,#244d78 193.84615384615384deg 221.53846153846155deg,#d99b2b 221.53846153846155deg 249.23076923076923deg,#244d78 249.23076923076923deg 276.9230769230769deg,#d99b2b 276.9230769230769deg 304.61538461538464deg,#244d78 304.61538461538464deg 332.3076923076923deg,#d99b2b 332.3076923076923deg 360deg);transition:transform 4s cubic-bezier(.12,.72,.12,1);will-change:transform}
+.fortune-wheel-center{width:92px;height:92px;font-size:clamp(12px,2.8vw,17px);text-align:center;padding:8px;overflow-wrap:anywhere}
+.fortune-prizes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:min(100%,440px)}
+.fortune-prizes span{padding:8px 6px;border:1px solid #d9a83d55;border-radius:9px;background:#10233c;color:#ffe29a;text-align:center;font-size:.9rem;font-weight:700}
+.fortune-spin-button{min-width:min(100%,300px)}
