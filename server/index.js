@@ -19,6 +19,18 @@ const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PG_POOL_MAX || 20), idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
 const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS global_game_events (event_key TEXT PRIMARY KEY, tap_multiplier INTEGER NOT NULL DEFAULT 1, starts_at TIMESTAMPTZ NOT NULL, expires_at TIMESTAMPTZ NOT NULL)`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_holdings (telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, quantity NUMERIC(24,8) NOT NULL CHECK(quantity > 0), average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,asset_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_trades (id BIGSERIAL PRIMARY KEY, telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, side TEXT NOT NULL CHECK(side IN ('buy','sell')), quantity NUMERIC(24,8) NOT NULL, price NUMERIC(24,8) NOT NULL, total BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query('ALTER TABLE player_market_holdings ADD COLUMN IF NOT EXISTS average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0'),pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`),pool.query(`CREATE TABLE IF NOT EXISTS player_case_tokens (telegram_id TEXT PRIMARY KEY, tokens INTEGER NOT NULL DEFAULT 0 CHECK(tokens >= 0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_starter_claims (telegram_id TEXT PRIMARY KEY, claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_unique_items (telegram_id TEXT NOT NULL, item_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity > 0), PRIMARY KEY(telegram_id,item_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_bank_accounts (telegram_id TEXT PRIMARY KEY, usd NUMERIC(24,2) NOT NULL DEFAULT 0 CHECK(usd>=0), eur NUMERIC(24,2) NOT NULL DEFAULT 0 CHECK(eur>=0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_football_clubs (telegram_id TEXT NOT NULL, club_id TEXT NOT NULL, currency TEXT NOT NULL CHECK(currency IN ('USD','EUR')), level SMALLINT NOT NULL DEFAULT 0 CHECK(level BETWEEN 0 AND 5), purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,club_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_charity_donations (id BIGSERIAL PRIMARY KEY,telegram_id TEXT NOT NULL,currency TEXT NOT NULL DEFAULT 'RUB' CHECK(currency='RUB'),amount NUMERIC(24,0) NOT NULL CHECK(amount>0),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`) ]).then(()=>pool.query(`CREATE INDEX IF NOT EXISTS player_charity_donations_player_idx ON player_charity_donations(telegram_id)`));
 const featureTablesReady = bansReady.then(()=>pool.query(`
+ CREATE TABLE IF NOT EXISTS player_expense_bills (
+   id BIGSERIAL PRIMARY KEY,
+   telegram_id TEXT NOT NULL,
+   kind TEXT NOT NULL,
+   amount BIGINT NOT NULL CHECK(amount>0),
+   description TEXT NOT NULL,
+   due_date DATE NOT NULL,
+   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+   paid_at TIMESTAMPTZ,
+   UNIQUE(telegram_id,kind,due_date)
+ );
+ CREATE INDEX IF NOT EXISTS player_expense_bills_open_idx ON player_expense_bills(telegram_id,paid_at,due_date);
  CREATE TABLE IF NOT EXISTS player_daily_logins (telegram_id TEXT PRIMARY KEY, streak INTEGER NOT NULL DEFAULT 0 CHECK(streak BETWEEN 0 AND 10), last_claim_date DATE);
  CREATE TABLE IF NOT EXISTS player_fortune_spins (telegram_id TEXT PRIMARY KEY, spin_index SMALLINT NOT NULL DEFAULT 0 CHECK(spin_index BETWEEN 0 AND 12), last_spin_at TIMESTAMPTZ);
  CREATE TABLE IF NOT EXISTS tournament_participants (tournament_id TEXT NOT NULL CHECK(tournament_id IN ('taps','assets','balance')), telegram_id TEXT NOT NULL, joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(tournament_id,telegram_id));
@@ -164,6 +176,61 @@ app.get('/api/referral/link',auth,async(req,res,next)=>{try{
  res.json({link,invitedCount,totalReward:invitedCount*100000,rewardPerInvite:100000});
  }catch(e){next(e)}});
 app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await transaction(c=>getState(c,req.playerId));res.json(state);}catch(e){next(e)}});
+app.get('/api/expenses/state',auth,async(req,res,next)=>{try{
+ await featureTablesReady;
+ const bills=await transaction(async c=>{
+  const state=await getState(c,req.playerId);
+  const playerBalance=Number(state.player.balance)||0;
+  const todayRow=await c.query("SELECT (NOW() AT TIME ZONE 'Europe/Moscow')::date AS today");
+  const today=todayRow.rows[0].today;
+  const exists=await c.query("SELECT kind FROM player_expense_bills WHERE telegram_id=$1 AND due_date=$2::date",[req.playerId,today]);
+  const created=new Set(exists.rows.map(x=>x.kind));
+  const add=async(kind,amount,description)=>{
+   if(!created.has(kind)&&Number.isSafeInteger(amount)&&amount>0){
+    await c.query("INSERT INTO player_expense_bills(telegram_id,kind,amount,description,due_date) VALUES($1,$2,$3,$4,$5::date) ON CONFLICT(telegram_id,kind,due_date) DO NOTHING",[req.playerId,kind,amount,description,today]);
+   }
+  };
+  const assets=(await c.query("SELECT asset_id FROM player_assets WHERE telegram_id=$1",[req.playerId])).rows;
+  const assetIds=assets.map(x=>x.asset_id);
+  const hasFactory=assetIds.includes('biz47')||assetIds.includes('biz53');
+  const clubs=(await c.query("SELECT club_id,currency,level FROM player_football_clubs WHERE telegram_id=$1",[req.playerId])).rows;
+  const ownedValue=assets.reduce((sum,x)=>{const a=ALL_ASSETS.find(z=>z.id===x.asset_id);return sum+(a?Number(a.cost)||0:0)},0);
+  const utility=Math.min(500000000,Math.max(5000,Math.floor(playerBalance*0.0003+ownedValue*0.00008)));
+  await add('utilities',utility,'Коммунальные платежи за предприятия и недвижимость');
+  if(!created.has('traffic')&&randomInt(100)<35) await add('traffic',randomInt(500000,5000001),'Случайный штраф за нарушение ПДД');
+  if(hasFactory&&!created.has('ecology')&&randomInt(100)<25) await add('ecology',randomInt(5000000,200000001),'Экологический штраф для производственного предприятия');
+  if((assetIds.length||clubs.length)&&!created.has('tax')&&randomInt(100)<22){
+   const tax=Math.min(100000000,Math.max(1000000,Math.floor(playerBalance*0.001)));
+   await add('tax',tax,'Начисление по результатам налоговой проверки');
+  }
+  if(clubs.length&&!created.has('club_upkeep')){
+   const clubCosts=clubs.reduce((sum,row)=>{const club=FOOTBALL_CLUBS.find(x=>x.id===row.club_id);if(!club)return sum;const price=row.currency==='EUR'?club.costEur*98:club.costUsd*90;return sum+price*(1+Number(row.level)*0.25)},0);
+   const upkeep=Math.max(100000,Math.floor(clubCosts*0.000002));
+   await add('club_upkeep',upkeep,'Содержание футбольных клубов, стадионов и персонала');
+  }
+  const rows=await c.query("SELECT id,kind,amount,description,due_date,created_at,paid_at FROM player_expense_bills WHERE telegram_id=$1 ORDER BY paid_at NULLS FIRST,due_date DESC,id DESC LIMIT 60",[req.playerId]);
+  return {state,bills:rows.rows.map(x=>({id:String(x.id),kind:x.kind,amount:Number(x.amount),description:x.description,dueDate:String(x.due_date).slice(0,10),createdAt:x.created_at,paidAt:x.paid_at})),balance:playerBalance};
+ });
+ res.json(bills);
+}catch(e){next(e)}});
+app.post('/api/expenses/pay',auth,async(req,res,next)=>{try{
+ await featureTablesReady;
+ const result=await transaction(async c=>{
+  const state=await getState(c,req.playerId);
+  const billId=String(req.body?.billId||'');
+  if(!/^\\d{1,18}$/.test(billId))throw Object.assign(new Error('Некорректный номер счёта.'),{status:400});
+  const bill=(await c.query("SELECT id,amount,paid_at FROM player_expense_bills WHERE id=$1 AND telegram_id=$2 FOR UPDATE",[billId,req.playerId])).rows[0];
+  if(!bill)throw Object.assign(new Error('Счёт не найден.'),{status:404});
+  if(bill.paid_at)throw Object.assign(new Error('Этот счёт уже оплачен.'),{status:409});
+  const amount=Number(bill.amount);
+  const debit=await c.query("UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1 AND balance>=$2 RETURNING balance",[req.playerId,amount]);
+  if(!debit.rowCount)throw Object.assign(new Error('Недостаточно игровых рублей для оплаты этого счёта.'),{status:400});
+  await c.query("UPDATE player_expense_bills SET paid_at=NOW() WHERE id=$1",[billId]);
+  return {state:await getState(c,req.playerId,false),paid:amount};
+ });
+ res.json(result);
+}catch(e){next(e)}});
+
 app.get('/api/daily/state',auth,async(req,res,next)=>{try{await featureTablesReady;const r=await pool.query(`SELECT streak,last_claim_date,(last_claim_date=(NOW() AT TIME ZONE 'Europe/Moscow')::date) AS claimed_today,(last_claim_date=((NOW() AT TIME ZONE 'Europe/Moscow')::date-1)) AS continues FROM player_daily_logins WHERE telegram_id=$1`,[req.playerId]);const x=r.rows[0]||{};res.json({streak:Number(x.streak)||0,claimedToday:x.claimed_today===true,nextDay:x.claimed_today?Math.min(10,(Number(x.streak)||0)+1):x.continues?Math.min(10,(Number(x.streak)||0)+1):1,reward:50000,totalDays:10});}catch(e){next(e)}});
 app.post('/api/daily/claim',auth,async(req,res,next)=>{try{await featureTablesReady;const result=await transaction(async c=>{await c.query('INSERT INTO player_daily_logins(telegram_id,streak) VALUES($1,0) ON CONFLICT DO NOTHING',[req.playerId]);const row=(await c.query("SELECT streak,last_claim_date,to_char((NOW() AT TIME ZONE 'Europe/Moscow')::date,'YYYY-MM-DD') AS today FROM player_daily_logins WHERE telegram_id=$1 FOR UPDATE",[req.playerId])).rows[0];const today=String(row.today).slice(0,10),last=row.last_claim_date?String(row.last_claim_date).slice(0,10):null;if(last===today)throw Object.assign(new Error('Награда за сегодня уже получена.'),{status:409});const yesterday=(await c.query("SELECT ($1::date - INTERVAL '1 day')::date::text AS d",[today])).rows[0].d;const streak=last===yesterday?Math.min(10,Number(row.streak)+1):1;await c.query('UPDATE players SET balance=balance+50000,updated_at=NOW() WHERE telegram_id=$1',[req.playerId]);await c.query('UPDATE player_daily_logins SET streak=$2,last_claim_date=$3::date WHERE telegram_id=$1',[req.playerId,streak,today]);return {state:await getState(c,req.playerId,false),streak,reward:50000,claimedToday:true};});res.json(result);}catch(e){next(e)}});
 const FORTUNE_REWARDS=[1000000,2000000,3000000,4000000,5000000,6000000,7000000,8000000,9000000,10000000,500000,250000,100000];
