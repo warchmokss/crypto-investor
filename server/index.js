@@ -30,6 +30,13 @@ const featureTablesReady = bansReady.then(()=>pool.query(`
    paid_at TIMESTAMPTZ,
    UNIQUE(telegram_id,kind,due_date)
  );
+ CREATE TABLE IF NOT EXISTS player_expense_daily_checks (
+   telegram_id TEXT NOT NULL,
+   kind TEXT NOT NULL,
+   due_date DATE NOT NULL,
+   occurred BOOLEAN NOT NULL,
+   PRIMARY KEY(telegram_id,kind,due_date)
+ );
  CREATE INDEX IF NOT EXISTS player_expense_bills_open_idx ON player_expense_bills(telegram_id,paid_at,due_date);
  CREATE TABLE IF NOT EXISTS player_daily_logins (telegram_id TEXT PRIMARY KEY, streak INTEGER NOT NULL DEFAULT 0 CHECK(streak BETWEEN 0 AND 10), last_claim_date DATE);
  CREATE TABLE IF NOT EXISTS player_fortune_spins (telegram_id TEXT PRIMARY KEY, spin_index SMALLINT NOT NULL DEFAULT 0 CHECK(spin_index BETWEEN 0 AND 12), last_spin_at TIMESTAMPTZ);
@@ -190,6 +197,12 @@ app.get('/api/expenses/state',auth,async(req,res,next)=>{try{
     await c.query("INSERT INTO player_expense_bills(telegram_id,kind,amount,description,due_date) VALUES($1,$2,$3,$4,$5::date) ON CONFLICT(telegram_id,kind,due_date) DO NOTHING",[req.playerId,kind,amount,description,today]);
    }
   };
+  const dailyEvent=async(kind,chance)=>{
+   const roll=await c.query("INSERT INTO player_expense_daily_checks(telegram_id,kind,due_date,occurred) VALUES($1,$2,$3::date,$4) ON CONFLICT DO NOTHING RETURNING occurred",[req.playerId,kind,today,randomInt(100)<chance]);
+   if(roll.rowCount)return roll.rows[0].occurred===true;
+   const saved=await c.query("SELECT occurred FROM player_expense_daily_checks WHERE telegram_id=$1 AND kind=$2 AND due_date=$3::date",[req.playerId,kind,today]);
+   return saved.rows[0]?.occurred===true;
+  };
   const assets=(await c.query("SELECT asset_id FROM player_assets WHERE telegram_id=$1",[req.playerId])).rows;
   const assetIds=assets.map(x=>x.asset_id);
   const hasFactory=assetIds.includes('biz47')||assetIds.includes('biz53');
@@ -197,9 +210,9 @@ app.get('/api/expenses/state',auth,async(req,res,next)=>{try{
   const ownedValue=assets.reduce((sum,x)=>{const a=ALL_ASSETS.find(z=>z.id===x.asset_id);return sum+(a?Number(a.cost)||0:0)},0);
   const utility=Math.min(500000000,Math.max(5000,Math.floor(playerBalance*0.0003+ownedValue*0.00008)));
   await add('utilities',utility,'Коммунальные платежи за предприятия и недвижимость');
-  if(!created.has('traffic')&&randomInt(100)<35) await add('traffic',randomInt(500000,5000001),'Случайный штраф за нарушение ПДД');
-  if(hasFactory&&!created.has('ecology')&&randomInt(100)<25) await add('ecology',randomInt(5000000,200000001),'Экологический штраф для производственного предприятия');
-  if((assetIds.length||clubs.length)&&!created.has('tax')&&randomInt(100)<22){
+  if(!created.has('traffic')&&await dailyEvent('traffic',35)) await add('traffic',randomInt(500000,5000001),'Случайный штраф за нарушение ПДД');
+  if(hasFactory&&!created.has('ecology')&&await dailyEvent('ecology',25)) await add('ecology',randomInt(5000000,200000001),'Экологический штраф для производственного предприятия');
+  if((assetIds.length||clubs.length)&&!created.has('tax')&&await dailyEvent('tax',22)){
    const tax=Math.min(100000000,Math.max(1000000,Math.floor(playerBalance*0.001)));
    await add('tax',tax,'Начисление по результатам налоговой проверки');
   }
