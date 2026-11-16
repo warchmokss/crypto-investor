@@ -263,6 +263,18 @@ app.post('/api/game/claim-starter-pack',auth,async(req,res,next)=>{try{
  });
  res.json(state);
  }catch(e){next(e)}});
+app.post('/api/game/spin-fortune',auth,async(req,res,next)=>{try{
+ const prizes=[500000000,100000000,50000000,10000000,5000000,2000000,1000000,500000,100000,50000];
+ const result=await transaction(async c=>{
+  await getState(c,req.playerId);
+  const debit=await c.query('UPDATE players SET balance=balance-50000000,updated_at=NOW() WHERE telegram_id=$1 AND balance>=50000000 RETURNING balance',[req.playerId]);
+  if(!debit.rowCount)throw Object.assign(new Error('Для вращения нужно 50 000 000 ₽.'),{status:400});
+  const prize=prizes[randomInt(prizes.length)];
+  await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[req.playerId,prize]);
+  return {state:await getState(c,req.playerId,false),prize};
+ });
+ res.json(result);
+ }catch(e){next(e)}});
 app.post('/api/game/open-case',auth,async(req,res,next)=>{try{
  const result=await transaction(async c=>{
   const state=await getState(c,req.playerId);
