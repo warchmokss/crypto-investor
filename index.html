@@ -128,12 +128,7 @@
       </div>
       <section class="exchange-card starter-pack-card"><h2>🎁 Бесплатный стартовый набор</h2><p class="muted">Получи один бесплатный билет на стандартный кейс — один раз на аккаунт.</p><button type="button" class="game-action" id="claimStarterPack">Получить бесплатный билет</button><small class="muted" id="donateStarterStatus">Один раз на аккаунт</small></section>
     </section>
-    <section id="fortune" class="page">
-<div class="hero"><p class="eyebrow">ИСПЫТАЙ УДАЧУ</p><h1>Колесо <span>фортуны</span></h1><p class="muted">Стоимость одного вращения — <b>50 000 000 ₽</b>. Приз выбирается случайно.</p></div>
-<div class="fortune-card"><div class="fortune-pointer">▼</div>
-<div class="fortune-wheel" id="fortuneWheel" aria-label="Колесо фортуны"><div class="fortune-sector" style="--i:0"><span>500 000 000 ₽</span></div><div class="fortune-sector" style="--i:1"><span>100 000 000 ₽</span></div><div class="fortune-sector" style="--i:2"><span>50 000 000 ₽</span></div><div class="fortune-sector" style="--i:3"><span>10 000 000 ₽</span></div><div class="fortune-sector" style="--i:4"><span>5 000 000 ₽</span></div><div class="fortune-sector" style="--i:5"><span>2 000 000 ₽</span></div><div class="fortune-sector" style="--i:6"><span>1 000 000 ₽</span></div><div class="fortune-sector" style="--i:7"><span>500 000 ₽</span></div><div class="fortune-sector" style="--i:8"><span>100 000 ₽</span></div><div class="fortune-sector" style="--i:9"><span>50 000 ₽</span></div><div class="fortune-wheel-center">₽</div></div>
-<button class="game-action fortune-spin-button" id="fortuneSpinButton" type="button">Крутить · 50 000 000 ₽</button>
-<p class="muted fortune-hint" id="fortuneResult" aria-live="polite">Нажми «Крутить», чтобы испытать удачу.</p></div></section>
+    <section id="fortune" class="page"><div class="hero"><p class="eyebrow">БЕСПЛАТНАЯ ИГРОВАЯ НАГРАДА</p><h1>Колесо <span>фортуны</span></h1><p class="muted">Крути бесплатно один раз в 8 минут. Награды выдаются по заранее заданной очереди.</p></div><div class="fortune-card"><div class="fortune-pointer">▼</div><div id="fortuneWheel" class="fortune-wheel" aria-label="Колесо фортуны с 13 наградами"><div id="fortuneWheelCenter" class="fortune-wheel-center">₽</div></div><div class="fortune-prizes"><span>1 000 000 ₽</span><span>2 000 000 ₽</span><span>3 000 000 ₽</span><span>4 000 000 ₽</span><span>5 000 000 ₽</span><span>6 000 000 ₽</span><span>7 000 000 ₽</span><span>8 000 000 ₽</span><span>9 000 000 ₽</span><span>10 000 000 ₽</span><span>500 000 ₽</span><span>250 000 ₽</span><span>100 000 ₽</span></div><button class="game-action fortune-spin-button" id="fortuneSpinButton" type="button">Крутить колесо</button><p class="muted fortune-hint" id="fortuneResult" aria-live="polite">Один бесплатный оборот каждые 8 минут. Войди через Telegram, чтобы сохранить награду.</p></div></section>
     <section id="charity" class="page">
       <div class="hero"><p class="eyebrow">ДОБРЫЕ ДЕЛА В ИГРЕ</p><h1>Благотворительность</h1><p class="muted">Переводи игровые рубли в общий игровой фонд. Все взносы учитываются в рейтинге топ-100.</p></div>
       <div class="bank-balances charity-stats"><article class="info-card"><h3>🌍 Всего пожертвовано</h3><b id="charityGlobalTotal">Загружаем…</b></article><article class="info-card"><h3>💚 Твои пожертвования</h3><b id="charityPersonalTotal">0 ₽</b></article></div>
@@ -342,6 +337,6 @@
   <div id="fireworks" class="fireworks" aria-hidden="true"></div>
   <div id="bonusPopup" class="bonus-popup" role="status" aria-live="polite"></div>
   <footer>CRYPTO INVESTOR · игровой симулятор капитала</footer>
-  <script src="script.js?v=20261116-fortune-wheel-2" onerror="var s=document.getElementById(\'saveStatus\');if(s){s.textContent=\'Не удалось загрузить основной файл игры. Проверь интернет и открой страницу заново.\';s.style.color=\'#ff7777\';}"></script>
+  <script src="script.js?v=20261116-fortune-cooldown-8m-1" onerror="var s=document.getElementById(\'saveStatus\');if(s){s.textContent=\'Не удалось загрузить основной файл игры. Проверь интернет и открой страницу заново.\';s.style.color=\'#ff7777\';}"></script>
 </body>
 </html>
