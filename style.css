@@ -318,3 +318,15 @@ button{touch-action:manipulation}
 .fortune-prizes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;width:min(100%,440px)}
 .fortune-prizes span{padding:8px 6px;border:1px solid #d9a83d55;border-radius:9px;background:#10233c;color:#ffe29a;text-align:center;font-size:.9rem;font-weight:700}
 .fortune-spin-button{min-width:min(100%,300px)}
+
+/* Магазин объединяет кейсы и колесо, чтобы нижнее меню было компактнее. */
+.store-tabs{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:16px auto 22px}
+.store-tab{flex:1 1 140px;max-width:240px;padding:12px 16px;border:1px solid #d9a83d66;border-radius:13px;background:#13243a;color:#f4d58c;font:inherit;font-weight:800;cursor:pointer}
+.store-tab.active{background:linear-gradient(135deg,#ffd34c,#e99a08);color:#1b1304;border-color:#ffd34c;box-shadow:0 4px 18px #f2b51b33}
+.store-panel{display:none}
+.store-panel.active{display:block}
+.fortune-wheel{overflow:hidden}
+.fortune-wheel-label{position:absolute;z-index:1;left:50%;top:50%;display:block;width:94px;margin-left:-47px;margin-top:-9px;color:#fff7d6;font-size:clamp(8px,2.15vw,12px);line-height:1.1;font-weight:900;text-align:center;text-shadow:0 1px 3px #000,0 0 5px #000;white-space:nowrap;pointer-events:none;transform:rotate(calc(var(--i)*27.6923077deg + 13.8461538deg)) translateY(-126px) rotate(90deg)}
+.fortune-wheel-label:nth-of-type(even){color:#fff}
+.fortune-wheel-center{z-index:3}
+@media(max-width:420px){.fortune-wheel-label{width:76px;margin-left:-38px;font-size:8px;transform:rotate(calc(var(--i)*27.6923077deg + 13.8461538deg)) translateY(-105px) rotate(90deg)}}
