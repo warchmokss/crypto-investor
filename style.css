@@ -347,3 +347,5 @@ button{touch-action:manipulation}
 .expense-paid-label{font-size:.85rem;color:#8bd8a2}
 .expense-rules{display:grid;gap:10px;padding-left:22px;color:#c5d2e1}
 @media(max-width:520px){.expense-row{align-items:flex-start;padding:11px;gap:8px}.expense-row-icon{font-size:1.4rem;flex-basis:28px}.expense-row-side strong{font-size:.85rem}.expense-row-side .shop-buy{font-size:.78rem;padding:8px}}
+
+.expense-warning{margin-top:7px!important;padding:8px 10px;border-left:3px solid #e8a33b;background:#3a2914;border-radius:6px;color:#ffdf9c!important;font-size:.82rem!important;line-height:1.4}
