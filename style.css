@@ -330,3 +330,20 @@ button{touch-action:manipulation}
 .fortune-wheel-label:nth-of-type(even){color:#fff}
 .fortune-wheel-center{z-index:3}
 @media(max-width:420px){.fortune-wheel-label{width:76px;margin-left:-38px;font-size:8px;transform:rotate(calc(var(--i)*27.6923077deg + 13.8461538deg)) translateY(-105px) rotate(90deg)}}
+
+/* Отдельная вкладка штрафов и обязательных игровых платежей */
+.expense-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.expense-summary-grid .info-card{display:grid;gap:8px}
+.expense-summary-grid b{font-size:1.25rem;color:#f5d58b}
+.expenses-list{display:grid;gap:10px;margin-top:14px}
+.expense-row{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #294663;border-radius:13px;background:#0d1d30}
+.expense-row-icon{font-size:1.8rem;flex:0 0 38px;text-align:center}
+.expense-row-main{min-width:0;flex:1}
+.expense-row-main p{margin:5px 0;color:#b8c7d9;font-size:.9rem}
+.expense-row-main small{color:#93a7bc}
+.expense-row-side{display:grid;gap:8px;justify-items:end;text-align:right}
+.expense-row-side strong{white-space:nowrap;color:#ffe09a}
+.expense-paid{opacity:.65}
+.expense-paid-label{font-size:.85rem;color:#8bd8a2}
+.expense-rules{display:grid;gap:10px;padding-left:22px;color:#c5d2e1}
+@media(max-width:520px){.expense-row{align-items:flex-start;padding:11px;gap:8px}.expense-row-icon{font-size:1.4rem;flex-basis:28px}.expense-row-side strong{font-size:.85rem}.expense-row-side .shop-buy{font-size:.78rem;padding:8px}}
