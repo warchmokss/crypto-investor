@@ -396,7 +396,7 @@ app.post('/api/game/upgrade-asset',auth,async(req,res,next)=>{try{const a=ALL_AS
 app.get('/api/leaderboard',auth,async(req,res,next)=>{try{
  const type=['assets','charity'].includes(req.query.type)?req.query.type:'balance';
  if(type==='charity'){
-  const r=await pool.query(`SELECT p.username,p.first_name,SUM(d.amount)::numeric AS charity_value FROM player_charity_donations d JOIN players p ON p.telegram_id=d.telegram_id GROUP BY p.telegram_id,p.username,p.first_name HAVING SUM(d.amount)>0 ORDER BY charity_value DESC,p.telegram_id ASC LIMIT 100`);
+  const r=await pool.query(`SELECT p.username,p.first_name,SUM(d.amount)::numeric AS charity_value FROM player_charity_donations d JOIN players p ON p.telegram_id::text=d.telegram_id GROUP BY p.telegram_id,p.username,p.first_name HAVING SUM(d.amount)>0 ORDER BY charity_value DESC,p.telegram_id ASC LIMIT 100`);
   const players=r.rows.map((x,i)=>({rank:i+1,name:x.username?`@${x.username}`:x.first_name||'Игрок',charityValue:Number(x.charity_value)}));
   return res.json({type:'charity',players});
  }
