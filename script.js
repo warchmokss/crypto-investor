@@ -312,6 +312,13 @@ function demoApi(path,body={}){
     if(game.starterPackClaimed)throw Error('Стартовый набор уже получен.');
     game.starterPackClaimed=true;game.caseTokens=(game.caseTokens||0)+1;
   }
+  else if(path==='/game/spin-fortune'){
+    const prizes=[500000000,100000000,50000000,10000000,5000000,2000000,1000000,500000,100000,50000];
+    if(p.balance<50000000)throw Error('Для вращения нужно 50 000 000 ₽.');
+    p.balance-=50000000;
+    const prize=prizes[Math.floor(Math.random()*prizes.length)];
+    p.balance+=prize;saveDemo();return {state:game,prize};
+  }
   else if(path==='/game/open-case'){
     const items=[{id:'neon_coin',label:'Неоновая монета'},{id:'pixel_crown',label:'Пиксельная корона'},{id:'blue_flame',label:'Синее пламя'},{id:'cyber_glasses',label:'Кибер-очки'},{id:'golden_badge',label:'Золотой значок'},{id:'holo_cube',label:'Голографический куб'},{id:'star_wings',label:'Звёздные крылья'},{id:'crystal_fox',label:'Кристальный лис'}];
     if(game.caseTokens>0)game.caseTokens--;else{if(p.balance<5000000)throw Error('Нужно 5 000 000 ₽ или билет из стартового набора.');p.balance-=5000000;}
@@ -672,6 +679,27 @@ tapButton?.addEventListener('click',e=>{e.preventDefault();const r=tapButton.get
 
 
 
+let fortuneSpinning=false;
+const fortunePrizes=[500000000,100000000,50000000,10000000,5000000,2000000,1000000,500000,100000,50000];
+$('fortuneSpinButton')?.addEventListener('click',async()=>{
+ const button=$('fortuneSpinButton'),result=$('fortuneResult'),wheel=$('fortuneWheel');
+ if(fortuneSpinning||busy||!game)return;
+ if(Number(game.player.balance)<50000000){result.textContent='Недостаточно средств: нужно 50 000 000 ₽.';return;}
+ fortuneSpinning=true;button.disabled=true;button.textContent='Колесо крутится…';result.textContent='Колесо выбирает случайный приз…';
+ try{
+  const outcome=await api('/game/spin-fortune',{});
+  const prize=Number(outcome.prize),index=fortunePrizes.indexOf(prize);
+  if(index<0)throw new Error('Сервер вернул неизвестный приз.');
+  game=normalizeGameState(outcome.state);renderAll();
+  const angle=360*6+(360-(index*36+18));
+  wheel.style.transition='none';wheel.style.transform='rotate(0deg)';void wheel.offsetWidth;
+  wheel.style.transition='transform 5s cubic-bezier(.12,.72,.12,1)';
+  wheel.style.transform='rotate('+angle+'deg)';
+  await new Promise(resolve=>setTimeout(resolve,5100));
+  result.textContent='🎉 Выпало: '+money(prize)+' ₽! Баланс: '+money(game.player.balance)+' ₽.';
+ }catch(error){result.textContent=error.message||'Не удалось прокрутить колесо.';}
+ finally{fortuneSpinning=false;button.disabled=false;button.textContent='Крутить · 50 000 000 ₽';}
+});
 $('charityDonate')?.addEventListener('click',async()=>{const amount=Math.floor(Number($('charityAmount').value)),status=$('charityStatus'),btn=$('charityDonate');if(!Number.isSafeInteger(amount)||amount<1){status.textContent='Укажи целую сумму в рублях больше нуля.';return;}if(!game||amount>game.player.balance){status.textContent='Недостаточно игровых рублей.';return;}if(demoMode){game.player.balance-=amount;game.charityDonatedRub=(game.charityDonatedRub||0)+amount;saveDemo();renderAll();$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub)+' ₽';$('charityAmount').value='';status.textContent='Пожертвовано '+money(amount)+' игровых ₽. Демо-режим: только на этом устройстве.';return;}btn.disabled=true;status.textContent='Оформляем пожертвование…';try{const result=await api('/game/donate',{amount});game=normalizeGameState(result.state);renderAll();$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub)+' ₽';$('charityAmount').value='';status.textContent='Пожертвование '+money(amount)+' ₽ успешно внесено в игровой фонд!';await renderCharityStats();}catch(e){status.textContent=e.message||'Не удалось оформить пожертвование.';}finally{btn.disabled=false;}});
 async function renderCharityStats(){const total=$('charityGlobalTotal');if(!total)return;if(demoMode){total.textContent='Демо: '+money(game?.charityDonatedRub||0)+' ₽';return;}try{const data=await api('/charity/stats');total.textContent=money(data.totalDonatedRub||0)+' ₽';}catch{total.textContent='Не удалось загрузить';}}
 document.querySelector('[data-page="charity"]')?.addEventListener('click',async()=>{if(!game)return;$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub||0)+' ₽';await renderCharityStats();});
