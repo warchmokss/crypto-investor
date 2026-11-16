@@ -363,3 +363,8 @@ button{touch-action:manipulation}
 .risk-outcomes{max-width:620px;margin:0 auto;padding:16px;border:1px solid #ffffff22;border-radius:14px;background:#0b1b11;text-align:center}
 .risk-outcomes h3{margin:0 0 8px}.risk-outcomes p{margin:0;color:#b9cbbf;line-height:1.7}
 .risk-wheel.spinning{filter:brightness(1.12)}
+
+/* Надёжное отображение активной страницы на мобильных WebView */
+main{display:block!important;}
+main>.page.active{display:block!important;visibility:visible!important;opacity:1!important;}
+main>.page:not(.active){display:none!important;}
