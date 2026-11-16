@@ -883,7 +883,7 @@ if(openCaseButton)openCaseButton.addEventListener('click',async()=>{
 document.querySelectorAll('[data-donate="premium"]').forEach(button=>button.addEventListener('click',()=>{
  const status=$('donatePremiumStatus');if(status)status.textContent='Платёжная функция пока не подключена.';
 }));
-const starterButton=document.querySelector('[data-donate="starter"]');
+const starterButton=$('claimStarterPack');
 if(starterButton)starterButton.addEventListener('click',async()=>{
  const status=$('donateStarterStatus');starterButton.disabled=true;status.textContent='Получаем набор…';
  try{game=normalizeGameState(await api('/game/claim-starter-pack',{}));renderAll();updateCaseUI();status.textContent='Стартовый набор получен: 1 бесплатный билет!';starterButton.textContent='Набор получен ✓';}
