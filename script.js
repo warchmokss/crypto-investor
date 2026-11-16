@@ -705,14 +705,14 @@ async function renderLeaderboard(type=leaderboardType){
  const caption=$('leaderCaption');
  const isAssets=leaderboardType==='assets';
  const isCharity=leaderboardType==='charity';
- caption.textContent=isCharity?'Топ-100 игроков по сумме благотворительных пожертвований':isAssets?'Топ-100 игроков по стоимости машин, бизнеса и другого имущества':'Forbes: топ-100 богатейших игроков по размеру баланса';
+ caption.textContent=isCharity?'Топ-100 игроков по сумме благотворительных пожертвований':isAssets?'Топ-100 игроков по стоимости машин, бизнеса и другого имущества':'Forbes: топ-100 богатейших игроков по общему состоянию';
  document.querySelectorAll('[data-leader-type]').forEach(btn=>btn.classList.toggle('active',btn.dataset.leaderType===leaderboardType));
  if(demoMode){list.innerHTML='<p class="muted leader-empty">Рейтинг доступен после входа через Telegram — в демо-режиме данные других игроков не загружаются.</p>';return;}
  list.innerHTML='<p class="muted leader-empty">Загружаем топ-100 игроков…</p>';
  try{
   const data=await api('/leaderboard?type='+leaderboardType);
   if(!Array.isArray(data.players)||!data.players.length){list.innerHTML='<p class="muted leader-empty">Пока нет зарегистрированных игроков.</p>';return;}
-  const field=isCharity?'charityValue':isAssets?'assetsValue':'balance';
+  const field=isCharity?'charityValue':isAssets?'assetsValue':'wealth';
   list.innerHTML=data.players.map(p=>`<article class="leader-row"><span class="leader-rank">${p.rank}</span><span class="leader-name">${escapeHtml(p.name)}</span><b class="leader-value">${money(p[field])} ₽</b></article>`).join('');
  }catch(e){list.innerHTML='<p class="muted leader-empty">'+escapeHtml(e.message||'Не удалось загрузить рейтинг')+'</p>';}
 }
