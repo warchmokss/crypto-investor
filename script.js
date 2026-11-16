@@ -776,6 +776,22 @@ $('transferSend')?.addEventListener('click',async()=>{const username=$('transfer
   finally{button.disabled=false;}
  });
 
+$('referralShare')?.addEventListener('click',async()=>{
+  const button=$('referralShare'),status=$('referralStatus');
+  if(demoMode){status.textContent='Ссылка доступна после входа через Telegram.';return;}
+  button.disabled=true;status.textContent='Готовим ссылку для отправки…';
+  try{
+    const data=await api('/referral/link');
+    const shareUrl='https://t.me/share/url?url='+encodeURIComponent(data.link)+'&text='+encodeURIComponent('Присоединяйся к CRYPTO INVESTOR! За первый вход по моей ссылке нам обоим начислят по 100 000 ₽.');
+    const tg=window.Telegram?.WebApp;
+    if(tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
+    else if(navigator.share) await navigator.share({title:'CRYPTO INVESTOR',text:'Присоединяйся к игре!',url:data.link});
+    else {status.textContent='Отправь другу эту ссылку: '+data.link;return;}
+    status.textContent='Открылось окно Telegram для отправки ссылки. Другу нужно нажать «Играть» в боте и запустить игру.';
+  }catch(e){status.textContent=e.message||'Не удалось подготовить ссылку.';}
+  finally{button.disabled=false;}
+});
+
 document.querySelector('[data-page="transfers"]')?.addEventListener('click',async()=>{
  if(!demoMode&&token){try{await refresh();const info=await api('/referral/link');$('referralCount').textContent='Приглашённых друзей: '+Number(info.invitedCount||0);$('referralRewardTotal').textContent='Получено за приглашения: '+money(info.totalReward||0)+' ₽';if(Number(info.totalReward)>0)$('referralStatus').textContent='Бонусы за приглашённых друзей уже начислены на твой баланс.';}catch{}}
  $('transferBalance').textContent=money(game?.player?.balance||0)+' ₽';
