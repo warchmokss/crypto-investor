@@ -154,18 +154,17 @@ app.post('/api/auth/telegram', async (req,res,next)=>{ try {
     if(user.referrerId) await c.query('INSERT INTO player_referrals(referred_telegram_id,referrer_telegram_id) VALUES($1,$2) ON CONFLICT(referred_telegram_id) DO NOTHING',[user.id,user.referrerId]);
     if(!created.rowCount){
       await c.query('UPDATE players SET username=$2,first_name=$3,updated_at=NOW() WHERE telegram_id=$1',[user.id,user.username,user.firstName]);
-      await c.query('DELETE FROM player_referrals WHERE referred_telegram_id=$1 AND rewarded_at IS NULL',[user.id]);
-    } else {
-      const referral=(await c.query('SELECT referrer_telegram_id FROM player_referrals WHERE referred_telegram_id=$1 AND rewarded_at IS NULL FOR UPDATE',[user.id])).rows[0];
-      if(referral && String(referral.referrer_telegram_id)!==String(user.id)){
-        const credited=await c.query('UPDATE players SET balance=balance+100000,updated_at=NOW() WHERE telegram_id=$1 RETURNING telegram_id',[referral.referrer_telegram_id]);
-        if(credited.rowCount){
-          await c.query('UPDATE players SET balance=balance+100000,updated_at=NOW() WHERE telegram_id=$1',[user.id]);
-          referralReward=100000;
-          await c.query('UPDATE player_referrals SET rewarded_at=NOW() WHERE referred_telegram_id=$1',[user.id]);
-        } else {
-          await c.query('DELETE FROM player_referrals WHERE referred_telegram_id=$1',[user.id]);
-        }
+    }
+    // Сохраняем приглашение, даже если игрок уже зарегистрирован, и выдаём бонус только один раз.
+    const referral=(await c.query('SELECT referrer_telegram_id FROM player_referrals WHERE referred_telegram_id=$1 AND rewarded_at IS NULL FOR UPDATE',[user.id])).rows[0];
+    if(referral && String(referral.referrer_telegram_id)!==String(user.id)){
+      const credited=await c.query('UPDATE players SET balance=balance+100000,updated_at=NOW() WHERE telegram_id=$1 RETURNING telegram_id',[referral.referrer_telegram_id]);
+      if(credited.rowCount){
+        await c.query('UPDATE players SET balance=balance+100000,updated_at=NOW() WHERE telegram_id=$1',[user.id]);
+        referralReward=100000;
+        await c.query('UPDATE player_referrals SET rewarded_at=NOW() WHERE referred_telegram_id=$1',[user.id]);
+      } else {
+        await c.query('DELETE FROM player_referrals WHERE referred_telegram_id=$1',[user.id]);
       }
     }
     await c.query('UPDATE players SET tap_reward=300 WHERE telegram_id=$1 AND tap_reward=50 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)',[user.id]);
