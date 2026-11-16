@@ -490,7 +490,7 @@ $('expensesList')?.addEventListener('click',async e=>{
 document.querySelector('[data-page="expenses"]')?.addEventListener('click',loadExpenses);
 function renderAll(){
  if(!game||!game.player)return;
- updateDisplay();renderBank();renderUpgrades();renderBusinesses();renderGarage();
+ updateDisplay();renderBank();renderUpgrades();renderBusinesses();renderGarage();renderBusinessGiftOptions();
  if(typeof updateCaseUI==='function')updateCaseUI();
  if(typeof renderTournaments==='function')renderTournaments();
  if(typeof renderMarket==='function'&&$('exchange')?.classList.contains('active'))renderMarket();
@@ -731,6 +731,33 @@ tapButton?.addEventListener('click',e=>{e.preventDefault();const r=tapButton.get
 $('charityDonate')?.addEventListener('click',async()=>{const amount=Math.floor(Number($('charityAmount').value)),status=$('charityStatus'),btn=$('charityDonate');if(!Number.isSafeInteger(amount)||amount<1){status.textContent='Укажи целую сумму в рублях больше нуля.';return;}if(!game||amount>game.player.balance){status.textContent='Недостаточно игровых рублей.';return;}if(demoMode){game.player.balance-=amount;game.charityDonatedRub=(game.charityDonatedRub||0)+amount;saveDemo();renderAll();$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub)+' ₽';$('charityAmount').value='';status.textContent='Пожертвовано '+money(amount)+' игровых ₽. Демо-режим: только на этом устройстве.';return;}btn.disabled=true;status.textContent='Оформляем пожертвование…';try{const result=await api('/game/donate',{amount});game=normalizeGameState(result.state);renderAll();$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub)+' ₽';$('charityAmount').value='';status.textContent='Пожертвование '+money(amount)+' ₽ успешно внесено в игровой фонд!';await renderCharityStats();}catch(e){status.textContent=e.message||'Не удалось оформить пожертвование.';}finally{btn.disabled=false;}});
 async function renderCharityStats(){const total=$('charityGlobalTotal');if(!total)return;if(demoMode){total.textContent='Демо: '+money(game?.charityDonatedRub||0)+' ₽';return;}try{const data=await api('/charity/stats');total.textContent=money(data.totalDonatedRub||0)+' ₽';}catch{total.textContent='Не удалось загрузить';}}
 document.querySelector('[data-page="charity"]')?.addEventListener('click',async()=>{if(!game)return;$('charityBalance').textContent=money(game.player.balance)+' ₽';$('charityPersonalTotal').textContent=money(game.charityDonatedRub||0)+' ₽';await renderCharityStats();});
+function renderBusinessGiftOptions(){
+ const select=$('giftBusinessSelect'),button=$('giftBusinessSend');
+ if(!select||!button||!game)return;
+ const previous=select.value;
+ const owned=ASSETS.businesses.filter(a=>game.owned.includes(a.id));
+ select.innerHTML=owned.length?'<option value="">Выбери бизнес</option>'+owned.map(a=>'<option value="'+a.id+'">'+a.name+'</option>').join(''):'<option value="">У тебя пока нет бизнесов</option>';
+ if(owned.some(a=>a.id===previous))select.value=previous;
+ select.disabled=owned.length===0;
+ button.disabled=owned.length===0||!select.value;
+}
+$('giftBusinessSelect')?.addEventListener('change',()=>{const b=$('giftBusinessSend');if(b)b.disabled=!$('giftBusinessSelect').value;});
+$('giftBusinessSend')?.addEventListener('click',async()=>{
+ const username=$('giftBusinessUsername').value.trim().replace(/^@/,'');
+ const assetId=$('giftBusinessSelect').value;
+ const status=$('giftBusinessStatus'),btn=$('giftBusinessSend');
+ if(!assetId){status.textContent='Выбери бизнес, который хочешь подарить.';return;}
+ if(!/^[A-Za-z0-9_]{5,32}$/.test(username)){status.textContent='Введи корректный Telegram username (5–32 символа).';return;}
+ if(demoMode){status.textContent='Дарение между игроками доступно в опубликованной игре через Telegram с подключённым сервером.';return;}
+ btn.disabled=true;status.textContent='Передаём бизнес…';
+ try{
+  const result=await api('/game/gift-business',{username,assetId});
+  game=normalizeGameState(result.state);renderAll();
+  status.textContent='Бизнес «'+result.businessName+'» успешно подарен игроку @'+result.recipient+'.';
+  $('giftBusinessUsername').value='';
+ }catch(e){status.textContent=e.message||'Не удалось подарить бизнес.';}
+ finally{btn.disabled=false;renderBusinessGiftOptions();}
+});
 $('transferSend')?.addEventListener('click',async()=>{const username=$('transferUsername').value.trim().replace(/^@/,'');const amount=Math.floor(Number($('transferAmount').value));const status=$('transferStatus');if(!/^[A-Za-z0-9_]{5,32}$/.test(username)){status.textContent='Введи корректный Telegram username (5–32 символа).';return;}if(!Number.isSafeInteger(amount)||amount<1){status.textContent='Укажи целую сумму больше нуля.';return;}if(!game||amount>game.player.balance){status.textContent='Недостаточно игровых рублей.';return;}if(demoMode){status.textContent='Переводы между пользователями доступны только в опубликованной Telegram Mini App с подключённым сервером. В локальном предпросмотре получателя проверить нельзя.';return;}const btn=$('transferSend');btn.disabled=true;status.textContent='Выполняется перевод…';try{const result=await api('/game/transfer',{username,amount});game=result.state;renderAll();$('transferBalance').textContent=money(game.player.balance)+' ₽';status.textContent=`Перевод ${money(amount)} ₽ пользователю @${result.recipient} выполнен. Комиссия 7%: ${money(result.commission)} ₽. Получатель получил ${money(result.received)} ₽.`;$('transferAmount').value='';}catch(e){status.textContent=e.message||'Не удалось выполнить перевод.';}finally{btn.disabled=false;}});
  $('referralCopy')?.addEventListener('click',async()=>{
   const button=$('referralCopy'),status=$('referralStatus');
