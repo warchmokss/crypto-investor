@@ -49,7 +49,7 @@
       <button class="nav-btn" data-page="garage"><span class="nav-icon">⌂</span><span>Гараж</span></button>
       <button class="nav-btn" data-page="bank"><span class="nav-icon">🏦</span><span>Банк</span></button>
       <button class="nav-btn" data-page="cases"><span class="nav-icon">🎁</span><span>Кейсы</span></button>
-      <button class="nav-btn" data-page="donate"><span class="nav-icon">⭐</span><span>Донат</span></button>
+      <button class="nav-btn" data-page="fortune"><span class="nav-icon">🎡</span><span>Фортуна</span></button>
       <button class="nav-btn" data-page="transfers"><span class="nav-icon">♧</span><span>Друзья</span></button>
       <button class="nav-btn" data-page="about"><span class="nav-icon">•••</span><span>Ещё</span></button>
       <button class="nav-btn admin-nav-btn" data-page="admin" id="adminNav" hidden>Админ</button>
@@ -126,14 +126,15 @@
         <p class="muted case-description">Внутри — коллекционные скины, значки и другие косметические предметы. Награды не меняют игровой баланс и не имеют денежной стоимости.</p>
         <div class="case-actions"><button class="game-action" id="openCaseButton" type="button">Открыть кейс · 5 000 000 ₽</button><span class="muted" id="casePreviewStatus" aria-live="polite">Бесплатных билетов: <b id="caseTokenCount">0</b></span></div>
       </div>
+      <section class="exchange-card starter-pack-card"><h2>🎁 Бесплатный стартовый набор</h2><p class="muted">Получи один бесплатный билет на стандартный кейс — один раз на аккаунт.</p><button type="button" class="game-action" id="claimStarterPack">Получить бесплатный билет</button><small class="muted" id="donateStarterStatus">Один раз на аккаунт</small></section>
     </section>
-    <section id="donate" class="page">
-      <div class="hero"><p class="eyebrow">ПОДДЕРЖКА ПРОЕКТА</p><h1>Донат <span>CRYPTO INVESTOR</span></h1><p class="muted">Стартовый набор содержит один бесплатный билет на Стандартный кейс.</p></div>
-      <div class="donate-grid">
-        <article class="donate-card"><div class="donate-icon">⭐</div><h2>Стартовый набор</h2><p>Один бесплатный билет на Стандартный кейс</p><b>Случайный косметический предмет</b><button type="button" class="shop-buy donate-preview" data-donate="starter">Получить стартовый набор</button><small class="donate-status" id="donateStarterStatus">Один раз на аккаунт</small></article>
-        <article class="donate-card featured"><div class="donate-icon">💎</div><h2>Премиум-набор</h2><p>Дополнительный набор сейчас недоступен</p><b>Платёжная функция отключена</b><button type="button" class="shop-buy donate-preview" data-donate="premium">Недоступно</button><small class="donate-status" id="donatePremiumStatus">Платежи не подключены</small></article>
+    <section id="fortune" class="page">
+      <div class="hero"><p class="eyebrow">ИСПЫТАЙ УДАЧУ</p><h1>Колесо <span>фортуны</span></h1><p class="muted">Здесь будет колесо фортуны. Награды, стоимость попытки и правила вращения настроим по твоим условиям.</p></div>
+      <div class="fortune-card">
+        <div class="fortune-pointer">▼</div>
+        <div class="fortune-wheel" aria-label="Колесо фортуны, пока без настроенных наград"><div class="fortune-wheel-center">?</div></div>
+        <p class="muted fortune-hint">Расскажи, какие призы должны быть на секторах и как игрок сможет крутить колесо.</p>
       </div>
-      <p class="muted donate-footnote">Платёжные покупки не подключены. Стартовый набор бесплатный.</p>
     </section>
     <section id="charity" class="page">
       <div class="hero"><p class="eyebrow">ДОБРЫЕ ДЕЛА В ИГРЕ</p><h1>Благотворительность</h1><p class="muted">Переводи игровые рубли в общий игровой фонд. Все взносы учитываются в рейтинге топ-100.</p></div>
@@ -343,6 +344,6 @@
   <div id="fireworks" class="fireworks" aria-hidden="true"></div>
   <div id="bonusPopup" class="bonus-popup" role="status" aria-live="polite"></div>
   <footer>CRYPTO INVESTOR · игровой симулятор капитала</footer>
-  <script src="script.js?v=20261116-forbes-total-wealth-1" onerror="var s=document.getElementById(\'saveStatus\');if(s){s.textContent=\'Не удалось загрузить основной файл игры. Проверь интернет и открой страницу заново.\';s.style.color=\'#ff7777\';}"></script>
+  <script src="script.js?v=20261116-fortune-tab-1" onerror="var s=document.getElementById(\'saveStatus\');if(s){s.textContent=\'Не удалось загрузить основной файл игры. Проверь интернет и открой страницу заново.\';s.style.color=\'#ff7777\';}"></script>
 </body>
 </html>
