@@ -49,6 +49,7 @@
       <button class="nav-btn" data-page="garage"><span class="nav-icon">⌂</span><span>Гараж</span></button>
       <button class="nav-btn" data-page="bank"><span class="nav-icon">🏦</span><span>Банк</span></button>
       <button class="nav-btn" data-page="store"><span class="nav-icon">🛍️</span><span>Магазин</span></button>
+      <button class="nav-btn" data-page="expenses"><span class="nav-icon">🧾</span><span>Платежи</span></button>
       <button class="nav-btn" data-page="transfers"><span class="nav-icon">♧</span><span>Друзья</span></button>
       <button class="nav-btn" data-page="about"><span class="nav-icon">•••</span><span>Ещё</span></button>
       <button class="nav-btn admin-nav-btn" data-page="admin" id="adminNav" hidden>Админ</button>
@@ -283,6 +284,35 @@
         <div id="tournamentLeaderboard" class="leaderboard-list"></div>
       </div>
       <p class="game-disclaimer">Рейтинг обновляется по данным игроков, вступивших в соответствующий турнир.</p>
+    </section>
+
+    <section id="expenses" class="page">
+      <div class="hero">
+        <p class="eyebrow">РАСХОДЫ ТВОЕЙ ИМПЕРИИ</p>
+        <h1>Штрафы и <span>платежи</span></h1>
+        <p class="muted">Оплачивай коммунальные счета, содержание клубов и случайные игровые штрафы. Суммы зависят от твоего капитала и имущества.</p>
+      </div>
+      <div class="section-balance">Твой баланс: <b id="expensesBalance">0 ₽</b></div>
+      <div class="expense-summary-grid">
+        <article class="info-card"><h3>К оплате</h3><b id="expensesDueTotal">0 ₽</b></article>
+        <article class="info-card"><h3>Счетов</h3><b id="expensesDueCount">0</b></article>
+      </div>
+      <div class="exchange-card">
+        <h2>🧾 Текущие начисления</h2>
+        <p class="muted">Коммунальные платежи рассчитываются ежедневно по балансу и стоимости имущества. Другие события появляются случайно. Счета не списываются автоматически.</p>
+        <div id="expensesList" class="expenses-list"><p class="muted">Загружаем платежи…</p></div>
+        <small id="expensesStatus" class="muted" aria-live="polite"></small>
+      </div>
+      <div class="exchange-card">
+        <h2>Правила начислений</h2>
+        <ul class="expense-rules">
+          <li>🚗 Нарушение ПДД — случайно, не чаще одного раза в день: 500 000–5 000 000 ₽.</li>
+          <li>🌱 Экологический штраф — для владельцев производств: 5 000 000–200 000 000 ₽.</li>
+          <li>🏛️ Налоговая проверка — случайно, сумма зависит от капитала.</li>
+          <li>⚽ Содержание футбольных клубов — ежедневные расходы на каждый клуб.</li>
+          <li>💡 Коммунальные платежи — ежедневный счёт, который растёт вместе с балансом и стоимостью имущества.</li>
+        </ul>
+      </div>
     </section>
 
     <section id="about" class="page">
