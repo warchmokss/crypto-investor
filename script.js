@@ -874,19 +874,30 @@ if(openCaseButton)openCaseButton.addEventListener('click',async()=>{
  try{
   const result=await api('/game/open-case',{});
   const reward=result.reward;
-  const chosen=CASE_ITEMS.find(x=>x.id===reward.itemId)||CASE_ITEMS[0];
-  const cells=Array.from({length:31},(_,i)=>i===24?chosen:CASE_ITEMS[Math.floor(Math.random()*CASE_ITEMS.length)]);
+  const chosen=CASE_ITEMS.find(x=>x.id===reward?.itemId);
+  if(!chosen)throw new Error('Сервер вернул неизвестный предмет кейса. Награда не будет подменена.');
+  // Убираем старую CSS-анимацию предпросмотра: она имела приоритет над
+  // inline transform и уводила ленту на фиксированные 520px к другому предмету.
+  track.classList.remove('spinning');
+  track.style.animation='none';
+  const winningIndex=24;
+  const cells=Array.from({length:31},(_,i)=>i===winningIndex?chosen:CASE_ITEMS[Math.floor(Math.random()*CASE_ITEMS.length)]);
   track.innerHTML=cells.map(item=>'<div class="case-reel-item"><span>'+item.icon+'</span><b>'+item.name+'</b><small>'+item.rarity+'</small></div>').join('');
-  track.style.transition='none';track.style.transform='translateX(0)';void track.offsetWidth;
-  const cellWidth=142, target=24*cellWidth-(track.parentElement.clientWidth/2-cellWidth/2);
+  track.style.transition='none';
+  track.style.transform='translateX(0)';
+  void track.offsetWidth;
+  const winningCell=track.children[winningIndex];
+  const windowRect=track.parentElement.getBoundingClientRect();
+  const cellRect=winningCell.getBoundingClientRect();
+  const target=cellRect.left+cellRect.width/2-(windowRect.left+windowRect.width/2);
   track.style.transition='transform 4.2s cubic-bezier(.08,.72,.12,1)';
-  track.style.transform='translateX(-'+target+'px)';
+  track.style.transform='translateX('+(-target)+'px)';
   await new Promise(resolve=>setTimeout(resolve,4350));
   game=normalizeGameState(result.state);renderAll();showFireworks();
-  status.textContent='Получен предмет: '+reward.label+' · добавлен в гараж!';
+  status.textContent='Получен предмет: '+chosen.name+' · добавлен в гараж!'; 
   renderCaseReel();
  }catch(error){status.textContent=error.message||'Не удалось открыть кейс.';}
- finally{caseSpinning=false;busy=false;updateCaseUI();}
+ finally{track?.classList.remove('spinning');if(track)track.style.animation='';caseSpinning=false;busy=false;updateCaseUI();}
 });
 document.querySelectorAll('[data-donate="premium"]').forEach(button=>button.addEventListener('click',()=>{
  const status=$('donatePremiumStatus');if(status)status.textContent='Платёжная функция пока не подключена.';
