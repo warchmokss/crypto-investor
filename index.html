@@ -50,6 +50,7 @@
       <button class="nav-btn" data-page="bank"><span class="nav-icon">🏦</span><span>Банк</span></button>
       <button class="nav-btn" data-page="cases"><span class="nav-icon">🎁</span><span>Кейсы</span></button>
       <button class="nav-btn" data-page="donate"><span class="nav-icon">⭐</span><span>Донат</span></button>
+      <button class="nav-btn" data-page="charity"><span class="nav-icon">💚</span><span>Благотворительность</span></button>
       <button class="nav-btn" data-page="transfers"><span class="nav-icon">♧</span><span>Друзья</span></button>
       <button class="nav-btn" data-page="about"><span class="nav-icon">•••</span><span>Ещё</span></button>
       <button class="nav-btn admin-nav-btn" data-page="admin" id="adminNav" hidden>Админ</button>
@@ -135,6 +136,11 @@
       </div>
       <p class="muted donate-footnote">Платёжные покупки не подключены. Стартовый набор бесплатный.</p>
     </section>
+    <section id="charity" class="page">
+      <div class="hero"><p class="eyebrow">ДОБРЫЕ ДЕЛА В ИГРЕ</p><h1>Благотворительность</h1><p class="muted">Переводи игровые рубли в общий игровой фонд. Все взносы учитываются в рейтинге топ-100.</p></div>
+      <div class="bank-balances charity-stats"><article class="info-card"><h3>🌍 Всего пожертвовано</h3><b id="charityGlobalTotal">Загружаем…</b></article><article class="info-card"><h3>💚 Твои пожертвования</h3><b id="charityPersonalTotal">0 ₽</b></article></div>
+      <section class="exchange-card charity-card"><h2>Сделать пожертвование</h2><p class="muted">Только игровые рубли. Лимита по сумме нет — можно пожертвовать любую сумму в пределах своего баланса.</p><label class="game-label" for="charityAmount">Сумма пожертвования (₽)</label><input class="exchange-input" id="charityAmount" type="number" min="1" step="1" placeholder="Например, 100000"><button class="game-action" id="charityDonate" type="button">Пожертвовать</button><p id="charityStatus" class="game-result" aria-live="polite">Укажи сумму в игровых рублях.</p><p class="section-balance">Твой баланс: <b id="charityBalance">0 ₽</b></p></section>
+    </section>
     <section id="garage" class="page">
       <div class="hero"><p class="eyebrow">ТВОЁ ИМУЩЕСТВО</p><h1>Мой <span>гараж</span></h1><p class="muted">Все купленные автомобили, квартиры и объекты бизнеса в одном месте.</p></div>
       <div class="garage-tiles">
@@ -162,6 +168,7 @@
         <button class="game-action" id="referralCopy" type="button">Скопировать пригласительную ссылку</button>
         <p id="referralStatus" class="game-result" aria-live="polite">Ссылка будет создана для твоего Telegram-аккаунта.</p>
         <p id="referralCount" class="muted">Приглашённых друзей: 0</p>
+        <p id="referralRewardTotal" class="muted">Получено за приглашения: 0 ₽</p>
       </div>
       <div class="section-balance">Твой баланс: <b id="transferBalance">0 ₽</b></div>
       <div class="exchange-card">
@@ -169,6 +176,7 @@
         <input class="exchange-input" id="transferUsername" type="text" maxlength="32" placeholder="@username" autocomplete="off">
         <label class="game-label" for="transferAmount">Сумма перевода (₽)</label>
         <input class="exchange-input" id="transferAmount" type="number" min="1" step="1" placeholder="Например, 1000">
+        <small class="muted">Комиссия — 7%. Получатель получит 93% суммы.</small>
         <button class="game-action" id="transferSend">Отправить перевод</button>
         <p id="transferStatus" class="game-result" aria-live="polite">Проверяй юзернейм перед отправкой.</p>
       </div>
@@ -179,11 +187,12 @@
       <div class="hero">
         <p class="eyebrow">РЕЙТИНГ ИГРОКОВ</p>
         <h1>Таблица <span>лидеров</span></h1>
-        <p class="muted">Сравнивай игровой баланс или стоимость купленных машин, бизнеса и другого имущества.</p>
+        <p class="muted">Сравнивай баланс, стоимость имущества и сумму благотворительных пожертвований.</p>
       </div>
       <div class="leader-tabs">
         <button class="category-btn active" data-leader-type="balance" type="button">💰 Forbes — топ-100 богатейших</button>
         <button class="category-btn" data-leader-type="assets" type="button">🏎️ Топ-100 по имуществу</button>
+        <button class="category-btn" data-leader-type="charity" type="button">💚 Топ-100 по благотворительности</button>
       </div>
       <p class="leader-caption" id="leaderCaption">Топ-100 игроков по размеру игрового баланса</p>
       <div class="leaderboard-list" id="leaderboardList" aria-live="polite">
