@@ -28,6 +28,8 @@ const featureTablesReady = bansReady.then(()=>pool.query(`
    due_date DATE NOT NULL,
    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
    paid_at TIMESTAMPTZ,
+   confiscated_at TIMESTAMPTZ,
+   confiscated_summary JSONB,
    UNIQUE(telegram_id,kind,due_date)
  );
  CREATE TABLE IF NOT EXISTS player_expense_daily_checks (
@@ -37,6 +39,8 @@ const featureTablesReady = bansReady.then(()=>pool.query(`
    occurred BOOLEAN NOT NULL,
    PRIMARY KEY(telegram_id,kind,due_date)
  );
+ ALTER TABLE player_expense_bills ADD COLUMN IF NOT EXISTS confiscated_at TIMESTAMPTZ;
+ ALTER TABLE player_expense_bills ADD COLUMN IF NOT EXISTS confiscated_summary JSONB;
  CREATE INDEX IF NOT EXISTS player_expense_bills_open_idx ON player_expense_bills(telegram_id,paid_at,due_date);
  CREATE TABLE IF NOT EXISTS player_daily_logins (telegram_id TEXT PRIMARY KEY, streak INTEGER NOT NULL DEFAULT 0 CHECK(streak BETWEEN 0 AND 10), last_claim_date DATE);
  CREATE TABLE IF NOT EXISTS player_fortune_spins (telegram_id TEXT PRIMARY KEY, spin_index SMALLINT NOT NULL DEFAULT 0 CHECK(spin_index BETWEEN 0 AND 12), last_spin_at TIMESTAMPTZ);
@@ -93,6 +97,18 @@ async function auth(req,res,next) {
   } catch(e) { res.status(401).json({ error:e.message || 'Не авторизован' }); }
 }
 async function transaction(fn) { const c=await pool.connect(); try { await c.query('BEGIN'); const result=await fn(c); await c.query('COMMIT'); return result; } catch(e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); } }
+async function confiscateOverdueTax(c,id) {
+ const overdue=await c.query("SELECT id FROM player_expense_bills WHERE telegram_id=$1 AND kind='tax' AND paid_at IS NULL AND confiscated_at IS NULL AND created_at<=NOW()-INTERVAL '24 hours' FOR UPDATE",[id]);
+ if(!overdue.rowCount)return 0;
+ const counts={businesses:0,clubs:0,marketAssets:0,collectibles:0};
+ counts.businesses=(await c.query('DELETE FROM player_assets WHERE telegram_id=$1 RETURNING asset_id',[id])).rowCount;
+ await c.query('DELETE FROM player_upgrades WHERE telegram_id=$1',[id]);
+ counts.clubs=(await c.query('DELETE FROM player_football_clubs WHERE telegram_id=$1 RETURNING club_id',[id])).rowCount;
+ counts.marketAssets=(await c.query('DELETE FROM player_market_holdings WHERE telegram_id=$1 RETURNING asset_id',[id])).rowCount;
+ counts.collectibles=(await c.query('DELETE FROM player_unique_items WHERE telegram_id=$1 RETURNING item_id',[id])).rowCount;
+ await c.query("UPDATE player_expense_bills SET confiscated_at=NOW(),confiscated_summary=$2::jsonb WHERE id=ANY($1::bigint[])",[overdue.rows.map(x=>String(x.id)),JSON.stringify(counts)]);
+ return Object.values(counts).reduce((a,b)=>a+b,0);
+}
 async function getState(client,id,applyIncome=true) {
   const p=(await client.query('SELECT * FROM players WHERE telegram_id=$1 FOR UPDATE',[id])).rows[0];
   if (!p) throw Object.assign(new Error('Игрок не найден'),{status:404});
@@ -185,6 +201,7 @@ app.get('/api/game/state',auth,async(req,res,next)=>{try{const state=await trans
 app.get('/api/expenses/state',auth,async(req,res,next)=>{try{
  await featureTablesReady;
  const bills=await transaction(async c=>{
+  await confiscateOverdueTax(c,req.playerId);
   const state=await getState(c,req.playerId);
   const playerBalance=Number(state.player.balance)||0;
   const todayRow=await c.query("SELECT (NOW() AT TIME ZONE 'Europe/Moscow')::date AS today");
@@ -220,19 +237,21 @@ app.get('/api/expenses/state',auth,async(req,res,next)=>{try{
    const upkeep=Math.max(100000,Math.floor(clubCosts*0.000002));
    await add('club_upkeep',upkeep,'Содержание футбольных клубов, стадионов и персонала');
   }
-  const rows=await c.query("SELECT id,kind,amount,description,due_date,created_at,paid_at FROM player_expense_bills WHERE telegram_id=$1 ORDER BY paid_at NULLS FIRST,due_date DESC,id DESC LIMIT 60",[req.playerId]);
-  return {state,bills:rows.rows.map(x=>({id:String(x.id),kind:x.kind,amount:Number(x.amount),description:x.description,dueDate:String(x.due_date).slice(0,10),createdAt:x.created_at,paidAt:x.paid_at})),balance:playerBalance};
+  const rows=await c.query("SELECT id,kind,amount,description,due_date,created_at,paid_at,created_at+INTERVAL '24 hours' AS confiscation_at,confiscated_at,confiscated_summary FROM player_expense_bills WHERE telegram_id=$1 ORDER BY paid_at NULLS FIRST,due_date DESC,id DESC LIMIT 60",[req.playerId]);
+  return {state,bills:rows.rows.map(x=>({id:String(x.id),kind:x.kind,amount:Number(x.amount),description:x.description,dueDate:String(x.due_date).slice(0,10),createdAt:x.created_at,paidAt:x.paid_at,confiscationAt:x.kind==='tax'?x.confiscation_at:null,confiscatedAt:x.confiscated_at,confiscatedSummary:x.confiscated_summary||null})),balance:playerBalance};
  });
  res.json(bills);
 }catch(e){next(e)}});
 app.post('/api/expenses/pay',auth,async(req,res,next)=>{try{
  await featureTablesReady;
  const result=await transaction(async c=>{
+  await confiscateOverdueTax(c,req.playerId);
   const state=await getState(c,req.playerId);
   const billId=String(req.body?.billId||'');
   if(!/^\d{1,18}$/.test(billId))throw Object.assign(new Error('Некорректный номер счёта.'),{status:400});
-  const bill=(await c.query("SELECT id,amount,paid_at FROM player_expense_bills WHERE id=$1 AND telegram_id=$2 FOR UPDATE",[billId,req.playerId])).rows[0];
+  const bill=(await c.query("SELECT id,amount,paid_at,confiscated_at,kind,created_at FROM player_expense_bills WHERE id=$1 AND telegram_id=$2 FOR UPDATE",[billId,req.playerId])).rows[0];
   if(!bill)throw Object.assign(new Error('Счёт не найден.'),{status:404});
+  if(bill.confiscated_at)throw Object.assign(new Error('Срок оплаты налогового счёта истёк. Имущество уже конфисковано.'),{status:409});
   if(bill.paid_at)throw Object.assign(new Error('Этот счёт уже оплачен.'),{status:409});
   const amount=Number(bill.amount);
   const debit=await c.query("UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1 AND balance>=$2 RETURNING balance",[req.playerId,amount]);
