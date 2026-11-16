@@ -414,6 +414,29 @@ app.post('/api/game/guess-number',auth,async(req,res,next)=>{try{
  res.json(result);
  }catch(e){next(e)}});
 app.post('/api/game/transfer',auth,async(req,res,next)=>{try{const username=String(req.body?.username||'').replace(/^@/,'').trim();const amount=Number(req.body?.amount);if(!/^[A-Za-z0-9_]{5,32}$/.test(username)||!Number.isSafeInteger(amount)||amount<1)throw Object.assign(new Error('Проверь username и сумму перевода'),{status:400});const commission=Math.round(amount*0.07),received=amount-commission;if(received<1)throw Object.assign(new Error('Сумма слишком мала для перевода с комиссией 7%.'),{status:400});const result=await transaction(async c=>{const recipient=(await c.query('SELECT telegram_id,username FROM players WHERE lower(username)=lower($1)',[username])).rows[0];if(!recipient)throw Object.assign(new Error('Игрок с таким username не найден. Он должен хотя бы один раз открыть приложение.'),{status:404});if(String(recipient.telegram_id)===String(req.playerId))throw Object.assign(new Error('Нельзя переводить самому себе'),{status:400});const debit=await c.query('UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1 AND balance >= $2 RETURNING balance',[req.playerId,amount]);if(!debit.rowCount)throw Object.assign(new Error('Недостаточно средств'),{status:400});await c.query('UPDATE players SET balance=balance+$2,updated_at=NOW() WHERE telegram_id=$1',[recipient.telegram_id,received]);await c.query('INSERT INTO player_transfers(sender_id,recipient_id,amount) VALUES($1,$2,$3)',[req.playerId,recipient.telegram_id,amount]);const state=await getState(c,req.playerId,false);return {state,recipient:recipient.username||username,amount,commission,received};});res.json(result);}catch(e){next(e)}});
+app.post('/api/game/gift-business',auth,async(req,res,next)=>{try{
+ const username=String(req.body?.username||'').replace(/^@/,'').trim();
+ const assetId=String(req.body?.assetId||'');
+ const business=ASSETS.businesses.find(x=>x.id===assetId);
+ if(!/^[A-Za-z0-9_]{5,32}$/.test(username))throw Object.assign(new Error('Проверь Telegram username получателя.'),{status:400});
+ if(!business)throw Object.assign(new Error('Можно дарить только бизнесы из раздела «Бизнесы».'),{status:400});
+ const result=await transaction(async c=>{
+  await getState(c,req.playerId,false);
+  const recipient=(await c.query('SELECT telegram_id,username FROM players WHERE lower(username)=lower($1)',[username])).rows[0];
+  if(!recipient)throw Object.assign(new Error('Игрок с таким username не найден. Он должен хотя бы один раз открыть приложение.'),{status:404});
+  if(String(recipient.telegram_id)===String(req.playerId))throw Object.assign(new Error('Нельзя подарить бизнес самому себе.'),{status:400});
+  const owned=(await c.query('DELETE FROM player_assets WHERE telegram_id=$1 AND asset_id=$2 RETURNING level',[req.playerId,assetId])).rows[0];
+  if(!owned)throw Object.assign(new Error('Этот бизнес не принадлежит тебе.'),{status:400});
+  try{
+   await c.query('INSERT INTO player_assets(telegram_id,asset_id,level) VALUES($1,$2,$3)',[recipient.telegram_id,assetId,Number(owned.level||0)]);
+  }catch(error){
+   if(error.code==='23505')throw Object.assign(new Error('У этого игрока уже есть такой бизнес. Подарить второй экземпляр нельзя.'),{status:409});
+   throw error;
+  }
+  return {state:await getState(c,req.playerId,false),recipient:recipient.username||username,businessName:business.name};
+ });
+ res.json(result);
+ }catch(e){next(e)}});
 app.post('/api/game/donate',auth,async(req,res,next)=>{try{const amount=Number(req.body?.amount);if(!Number.isSafeInteger(amount)||amount<1)throw Object.assign(new Error('Укажи целую сумму пожертвования в игровых рублях.'),{status:400});const result=await transaction(async c=>{const debit=await c.query('UPDATE players SET balance=balance-$2,updated_at=NOW() WHERE telegram_id=$1 AND balance >= $2 RETURNING balance',[req.playerId,amount]);if(!debit.rowCount)throw Object.assign(new Error('Недостаточно игровых рублей.'),{status:400});await c.query('INSERT INTO player_charity_donations(telegram_id,amount) VALUES($1,$2)',[req.playerId,amount]);return {state:await getState(c,req.playerId,false),donated:amount};});res.json(result);}catch(e){next(e)}});
 app.get('/api/charity/stats',auth,async(req,res,next)=>{try{const r=await pool.query('SELECT COALESCE(SUM(amount),0) AS total FROM player_charity_donations');res.json({totalDonatedRub:Number(r.rows[0]?.total||0)});}catch(e){next(e)}});
 app.post('/api/game/buy-upgrade',auth,async(req,res,next)=>{try{
