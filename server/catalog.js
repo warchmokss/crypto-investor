@@ -220,27 +220,27 @@ export const ASSETS = {
   ]
 };
 export const FOOTBALL_CLUBS = [
-  {id:'club_zenit',name:'Зенит',icon:'⚽',costUsd:4880000000,costEur:4481632653,income:4628000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_spartak',name:'Спартак Москва',icon:'🔴',costUsd:4270000000,costEur:3921428572,income:4049500,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_krasnodar',name:'Краснодар',icon:'🟢',costUsd:3660000000,costEur:3361224490,income:3471000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_cska',name:'ЦСКА Москва',icon:'🔴',costUsd:3355000000,costEur:3081122449,income:3181750,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_dynamo',name:'Динамо Москва',icon:'🔵',costUsd:2745000000,costEur:2520918367,income:2603250,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_lokomotiv',name:'Локомотив Москва',icon:'🟢',costUsd:2440000000,costEur:2240816327,income:2314000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_rubin',name:'Рубин',icon:'🔴',costUsd:1830000000,costEur:1680612245,income:1735500,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_rostov',name:'Ростов',icon:'🟡',costUsd:1525000000,costEur:1400510204,income:1446250,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_baltika',name:'Балтика',icon:'🔵',costUsd:1098000000,costEur:1008367347,income:1041300,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_krylia',name:'Крылья Советов',icon:'🟢',costUsd:610000000,costEur:560204082,income:578500,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_real',name:'Реал Мадрид',icon:'👑',costUsd:18300000000,costEur:16806122449,income:17355000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_barcelona',name:'Барселона',icon:'🔵',costUsd:15250000000,costEur:14005102041,income:14462500,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_manchester_united',name:'Манчестер Юнайтед',icon:'🔴',costUsd:12200000000,costEur:11204081633,income:11570000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_psg',name:'Пари Сен-Жермен',icon:'🔵',costUsd:10980000000,costEur:10083673469,income:10413000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_manchester_city',name:'Манчестер Сити',icon:'🩵',costUsd:10370000000,costEur:9523469388,income:9834500,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_liverpool',name:'Ливерпуль',icon:'🔴',costUsd:9760000000,costEur:8963265306,income:9256000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_juventus',name:'Ювентус',icon:'⚫',costUsd:9150000000,costEur:8403061224,income:8677500,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_bayern',name:'Бавария',icon:'🔴',costUsd:8540000000,costEur:7842857143,income:8099000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_chelsea',name:'Челси',icon:'🔵',costUsd:7930000000,costEur:7282653061,income:7520500,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_arsenal',name:'Арсенал',icon:'🔴',costUsd:7320000000,costEur:6722448979,income:6942000,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'},
-  {id:'club_el_vanto',name:'Эль Ванто',icon:'🛡️',costUsd:3050000000,costEur:2801020408,income:2892500,description:'Футбольный клуб. Игровой доход начисляется в валюте покупки.'}
+  {id:'club_zenit',name:'Зенит',icon:'⚽',costRub:48800000,income:46280,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_spartak',name:'Спартак Москва',icon:'🔴',costRub:42700000,income:40495,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_krasnodar',name:'Краснодар',icon:'🟢',costRub:36600000,income:34710,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_cska',name:'ЦСКА Москва',icon:'🔴',costRub:33550000,income:31818,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_dynamo',name:'Динамо Москва',icon:'🔵',costRub:27450000,income:26033,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_lokomotiv',name:'Локомотив Москва',icon:'🟢',costRub:24400000,income:23140,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_rubin',name:'Рубин',icon:'🔴',costRub:18300000,income:17355,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_rostov',name:'Ростов',icon:'🟡',costRub:15250000,income:14463,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_baltika',name:'Балтика',icon:'🔵',costRub:10980000,income:10413,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_krylia',name:'Крылья Советов',icon:'🟢',costRub:6100000,income:5785,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_real',name:'Реал Мадрид',icon:'👑',costRub:183000000,income:173550,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_barcelona',name:'Барселона',icon:'🔵',costRub:152500000,income:144625,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_manchester_united',name:'Манчестер Юнайтед',icon:'🔴',costRub:122000000,income:115700,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_psg',name:'Пари Сен-Жермен',icon:'🔵',costRub:109800000,income:104130,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_manchester_city',name:'Манчестер Сити',icon:'🩵',costRub:103700000,income:98345,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_liverpool',name:'Ливерпуль',icon:'🔴',costRub:97600000,income:92560,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_juventus',name:'Ювентус',icon:'⚫',costRub:91500000,income:86775,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_bayern',name:'Бавария',icon:'🔴',costRub:85400000,income:80990,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_chelsea',name:'Челси',icon:'🔵',costRub:79300000,income:75205,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_arsenal',name:'Арсенал',icon:'🔴',costRub:73200000,income:69420,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'},
+  {id:'club_el_vanto',name:'Эль Ванто',icon:'🛡️',costRub:30500000,income:28925,description:'Футбольный клуб · цена и доход указаны в игровых рублях.'}
 ];
 export const ALL_ASSETS = Object.values(ASSETS).flat();
 // Общий множитель пассивного дохода для всех типов активов.
