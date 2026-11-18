@@ -47,7 +47,6 @@
       <button class="nav-btn active" data-page="home"><span class="nav-icon">▶</span><span>Играть</span></button>
       <button class="nav-btn" data-page="business"><span class="nav-icon">▣</span><span>Бизнес</span></button>
       <button class="nav-btn" data-page="garage"><span class="nav-icon">⌂</span><span>Гараж</span></button>
-      <button class="nav-btn" data-page="bank"><span class="nav-icon">🏦</span><span>Банк</span></button>
       <button class="nav-btn" data-page="store"><span class="nav-icon">🛍️</span><span>Магазин</span></button>
       <button class="nav-btn" data-page="expenses"><span class="nav-icon">🧾</span><span>Платежи</span></button>
       <button class="nav-btn" data-page="transfers"><span class="nav-icon">♧</span><span>Друзья</span></button>
@@ -117,7 +116,6 @@
       <p class="muted trade-note">Продажа возвращает 70% первоначальной стоимости. Доход от актива начисляется, пока он у тебя.</p>
     </section>
 
-    <section id="bank" class="page"><div class="hero"><p class="eyebrow">ВАЛЮТНЫЙ СЧЁТ</p><h1>Игровой <span>банк</span></h1><p class="muted">Меняй игровые рубли на доллары и евро. Курс фиксированный и действует только внутри игры.</p></div><div class="bank-balances"><article class="info-card"><h3>₽ Рубли</h3><b id="bankRUB">0 ₽</b></article><article class="info-card"><h3>💵 Доллары</h3><b id="bankUSD">0 $</b></article><article class="info-card"><h3>💶 Евро</h3><b id="bankEUR">0 €</b></article></div><section class="exchange-card"><h2>Обмен валюты</h2><p class="muted">1 $ = 90 игровых ₽ · 1 € = 98 игровых ₽</p><div class="bank-form"><label>Откуда<select id="bankFrom"><option value="RUB">Рубли ₽</option><option value="USD">Доллары $</option><option value="EUR">Евро €</option></select></label><label>Куда<select id="bankTo"><option value="USD">Доллары $</option><option value="EUR">Евро €</option><option value="RUB">Рубли ₽</option></select></label><label>Сумма<input id="bankAmount" type="number" min="0.01" step="0.01" placeholder="Например, 9000"></label><button class="game-action" id="bankExchange" type="button">Обменять</button></div><p id="bankPreview" class="bank-preview muted" aria-live="polite">Сумма к получению появится здесь после ввода суммы.</p><small id="bankStatus" class="muted" aria-live="polite"></small><p id="bankIncome" class="muted"></p></section></section>
     <section id="store" class="page">
       <div class="hero"><p class="eyebrow">МАГАЗИН И НАГРАДЫ</p><h1>Игровой <span>магазин</span></h1><p class="muted">Открывай кейсы и забирай бесплатные награды в колесе фортуны.</p></div>
       <div class="store-tabs" role="tablist" aria-label="Разделы магазина"><button type="button" class="store-tab active" data-store-panel="cases">🎁 Кейсы</button><button type="button" class="store-tab" data-store-panel="fortune">🎡 Фортуна</button></div>
@@ -220,7 +218,7 @@
       <div class="leaderboard-list" id="leaderboardList" aria-live="polite">
         <p class="muted">Загружаем рейтинг игроков…</p>
       </div>
-      <p class="muted leader-note">Рейтинг Forbes учитывает баланс, бизнесы, автомобили, недвижимость, футбольные клубы, валюту в банке, биржевой портфель и уникальные предметы. Иностранная валюта пересчитывается по игровому курсу: 1 $ = 90 ₽, 1 € = 98 ₽. Рейтинг обновляется при открытии вкладки и каждые 5 минут.</p>
+      <p class="muted leader-note">Рейтинг Forbes учитывает игровой баланс в рублях, бизнесы, автомобили, недвижимость, футбольные клубы, биржевой портфель и уникальные предметы. Рейтинг обновляется при открытии вкладки и каждые 5 минут.</p>
     </section>
 
     <section id="bets" class="page">
