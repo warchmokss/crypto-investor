@@ -18,9 +18,9 @@ window.__ciMainScriptLoaded = true;
   });
 })();
 const UPGRADES = [
-  { id:'tap2', name:'Усиленный тап', icon:'👆', description:'Получай 200 ₽ за каждое нажатие.', cost:72000, tap:200 },
-  { id:'tap3', name:'Профессиональный тап', icon:'⚡', description:'Получай 300 ₽ за каждое нажатие.', cost:360000, tap:300 },
-  { id:'tap4', name:'Универсальный тап', icon:'✨', description:'Получай 400 ₽ за каждое нажатие.', cost:360000, tap:400 }
+  { id:'tap2', name:'Усиленный тап', icon:'👆', description:'Получай 200 ₽ за каждое нажатие.', cost:300, tap:200 },
+  { id:'tap3', name:'Профессиональный тап', icon:'⚡', description:'Получай 300 ₽ за каждое нажатие.', cost:350, tap:300 },
+  { id:'tap4', name:'Универсальный тап', icon:'✨', description:'Получай 400 ₽ за каждое нажатие.', cost:400, tap:400 }
 ];
 const CAR_PHOTOS = ["https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=900&q=80","https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=80","https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=900&q=80","https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=900&q=80","https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=900&q=80","https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=900&q=80","https://images.unsplash.com/photo-1489824904134-891ab64532f1?auto=format&fit=crop&w=900&q=80","https://images.unsplash.com/photo-1504215680853-026ed2a45def?auto=format&fit=crop&w=900&q=80"];
 const ASSETS = {
