@@ -1,7 +1,7 @@
 export const UPGRADES = [
-  { id: 'tap2', name: 'Усиленный тап', cost:72000, tap: 200 },
-  { id: 'tap3', name: 'Профессиональный тап', cost:360000, tap: 300 },
-  { id: 'tap4', name: 'Универсальный тап', cost:360000, tap: 400 }
+  { id: 'tap2', name: 'Усиленный тап', cost:300, tap: 200 },
+  { id: 'tap3', name: 'Профессиональный тап', cost:350, tap: 300 },
+  { id: 'tap4', name: 'Универсальный тап', cost:400, tap: 400 }
 ];
 export const ASSETS = {
   cars: [
