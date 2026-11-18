@@ -751,27 +751,30 @@ app.post('/api/telegram/webhook', async (req,res) => {
         await sendBotMessage(chatId, 'Полный сброс доступен только главному администратору.');
         return;
       }
+      await featureTablesReady;
       const result = await transaction(async c => {
-        const assets = await c.query('DELETE FROM player_assets');
-        const upgrades = await c.query('DELETE FROM player_upgrades');
-        const claims = await c.query('DELETE FROM player_crossword_claims');
+        const deleted = {};
+        for (const table of [
+          'player_transfers','player_assets','player_upgrades','player_crossword_claims',
+          'player_market_holdings','player_market_trades','player_referrals',
+          'player_case_tokens','player_starter_claims','player_unique_items',
+          'player_bank_accounts','player_football_clubs','player_charity_donations',
+          'player_expense_bills','player_expense_daily_checks','player_daily_logins',
+          'player_fortune_spins','player_risk_wheel','tournament_participants'
+        ]) {
+          deleted[table] = (await c.query('DELETE FROM ' + table)).rowCount;
+        }
         const players = await c.query(
-          'UPDATE players SET balance=0,taps=0,tap_reward=300,last_income_at=NOW(),updated_at=NOW() RETURNING telegram_id'
+          'UPDATE players SET balance=0,taps=0,tap_reward=100,last_income_at=NOW(),updated_at=NOW() RETURNING telegram_id'
         );
-        return {
-          players: players.rowCount,
-          assets: assets.rowCount,
-          upgrades: upgrades.rowCount,
-          claims: claims.rowCount
-        };
+        return { players: players.rowCount, deleted };
       });
       await sendBotMessage(chatId,
         'Полный сброс выполнен. Аккаунты и авторизация сохранены.\\n' +
         'Игроков сброшено: ' + result.players + '.\\n' +
-        'Удалено активов: ' + result.assets + '.\\n' +
-        'Сброшено улучшений: ' + result.upgrades + '.\\n' +
-        'Сброшено отметок кроссворда: ' + result.claims + '.\\n' +
-        'Баланс: 0 ₽, тап: 300 ₽, прогресс уровней: 0.'
+        'Игровые данные и покупки очищены: ' + Object.values(result.deleted).reduce((a,b)=>a+b,0) + ' записей.\\n' +
+        'Баланс: 0 ₽, нажатия: 0, тап: 100 ₽, улучшения и активы: 0.\\n' +
+        'Таблица лидеров теперь начинается с нулевых балансов.'
       );
       return;
     }
