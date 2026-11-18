@@ -619,10 +619,18 @@ async function flushTapQueue(){
  tapFlushPromise=(async()=>{
   while(pendingTaps>0){
    const count=Math.min(1000,pendingTaps);pendingTaps-=count;
+   const before=normalizeGameState(JSON.parse(JSON.stringify(game)));
+   const oldTaps=Number(before.player.taps||0);
+   const oldLevel=levelForTaps(oldTaps).level;
+   const optimisticLevel=levelForTaps(oldTaps+count).level;
+   const optimisticBonus=(Math.floor((oldTaps+count)/100)-Math.floor(oldTaps/100))*500;
+   const optimisticLevelReward=Math.max(0,optimisticLevel-oldLevel)*25000;
+   // Сразу показываем начисление на экране, не ждём ответа сервера.
+   game.player.taps=oldTaps+count;
+   game.player.balance=Number(before.player.balance||0)+Number(before.player.tapReward||0)*count+optimisticBonus+optimisticLevelReward;
+   renderAll();
    try{
     const next=await api('/game/tap',{count});
-    const oldTaps=Number(game?.player?.taps||0);
-    const oldLevel=levelForTaps(oldTaps).level;
     game=normalizeGameState(next);
     const newLevel=levelForTaps(Number(game.player.taps||0)).level;
     const levelsGained=Math.max(0,newLevel-oldLevel);
@@ -635,6 +643,8 @@ async function flushTapQueue(){
       ? '🎉 Вы перешли на '+(levelsGained===1?'следующий уровень!':'новый уровень!')+' +'+money(levelReward)+' ₽ зачислено на баланс.'
       : 'Засчитано тапов: '+count;
    }catch(error){
+    game=before;
+    renderAll();
     pendingTaps+=count;
     $('tapMessage').textContent=error.message||'Не удалось сохранить тапы. Нажми кнопку ещё раз.';
     $('saveStatus').textContent='Не удалось сохранить тапы';
