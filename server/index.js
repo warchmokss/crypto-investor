@@ -17,7 +17,7 @@ import { UPGRADES, ASSETS, ALL_ASSETS, FOOTBALL_CLUBS, getIncome } from './catal
 const { Pool } = pg;
 const app = express();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: Number(process.env.PG_POOL_MAX || 20), idleTimeoutMillis: 30000, connectionTimeoutMillis: 5000 });
-const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS global_game_events (event_key TEXT PRIMARY KEY, tap_multiplier INTEGER NOT NULL DEFAULT 1, starts_at TIMESTAMPTZ NOT NULL, expires_at TIMESTAMPTZ NOT NULL)`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_holdings (telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, quantity NUMERIC(24,8) NOT NULL CHECK(quantity > 0), average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,asset_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_trades (id BIGSERIAL PRIMARY KEY, telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, side TEXT NOT NULL CHECK(side IN ('buy','sell')), quantity NUMERIC(24,8) NOT NULL, price NUMERIC(24,8) NOT NULL, total BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query('ALTER TABLE player_market_holdings ADD COLUMN IF NOT EXISTS average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0'),pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`),pool.query(`CREATE TABLE IF NOT EXISTS player_case_tokens (telegram_id TEXT PRIMARY KEY, tokens INTEGER NOT NULL DEFAULT 0 CHECK(tokens >= 0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_starter_claims (telegram_id TEXT PRIMARY KEY, claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_unique_items (telegram_id TEXT NOT NULL, item_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity > 0), PRIMARY KEY(telegram_id,item_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_bank_accounts (telegram_id TEXT PRIMARY KEY, usd NUMERIC(24,2) NOT NULL DEFAULT 0 CHECK(usd>=0), eur NUMERIC(24,2) NOT NULL DEFAULT 0 CHECK(eur>=0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_football_clubs (telegram_id TEXT NOT NULL, club_id TEXT NOT NULL, currency TEXT NOT NULL CHECK(currency IN ('USD','EUR')), level SMALLINT NOT NULL DEFAULT 0 CHECK(level BETWEEN 0 AND 5), purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,club_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_charity_donations (id BIGSERIAL PRIMARY KEY,telegram_id TEXT NOT NULL,currency TEXT NOT NULL DEFAULT 'RUB' CHECK(currency='RUB'),amount NUMERIC(24,0) NOT NULL CHECK(amount>0),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`) ]).then(()=>pool.query(`CREATE INDEX IF NOT EXISTS player_charity_donations_player_idx ON player_charity_donations(telegram_id)`));
+const bansReady = Promise.all([pool.query(`CREATE TABLE IF NOT EXISTS global_game_events (event_key TEXT PRIMARY KEY, tap_multiplier INTEGER NOT NULL DEFAULT 1, starts_at TIMESTAMPTZ NOT NULL, expires_at TIMESTAMPTZ NOT NULL)`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_holdings (telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, quantity NUMERIC(24,8) NOT NULL CHECK(quantity > 0), average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,asset_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_market_trades (id BIGSERIAL PRIMARY KEY, telegram_id TEXT NOT NULL, asset_id TEXT NOT NULL, side TEXT NOT NULL CHECK(side IN ('buy','sell')), quantity NUMERIC(24,8) NOT NULL, price NUMERIC(24,8) NOT NULL, total BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query('ALTER TABLE player_market_holdings ADD COLUMN IF NOT EXISTS average_buy_price NUMERIC(24,8) NOT NULL DEFAULT 0'),pool.query(`CREATE TABLE IF NOT EXISTS player_account_bans (telegram_id TEXT PRIMARY KEY, banned_by TEXT NOT NULL, reason TEXT, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_referrals (referred_telegram_id TEXT PRIMARY KEY, referrer_telegram_id TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), rewarded_at TIMESTAMPTZ)`),pool.query(`CREATE TABLE IF NOT EXISTS player_case_tokens (telegram_id TEXT PRIMARY KEY, tokens INTEGER NOT NULL DEFAULT 0 CHECK(tokens >= 0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_starter_claims (telegram_id TEXT PRIMARY KEY, claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`),pool.query(`CREATE TABLE IF NOT EXISTS player_unique_items (telegram_id TEXT NOT NULL, item_id TEXT NOT NULL, quantity INTEGER NOT NULL DEFAULT 1 CHECK(quantity > 0), PRIMARY KEY(telegram_id,item_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_bank_accounts (telegram_id TEXT PRIMARY KEY, usd NUMERIC(24,2) NOT NULL DEFAULT 0 CHECK(usd>=0), eur NUMERIC(24,2) NOT NULL DEFAULT 0 CHECK(eur>=0))`),pool.query(`CREATE TABLE IF NOT EXISTS player_football_clubs (telegram_id TEXT NOT NULL, club_id TEXT NOT NULL, currency TEXT NOT NULL DEFAULT 'RUB' CHECK(currency='RUB'), level SMALLINT NOT NULL DEFAULT 0 CHECK(level BETWEEN 0 AND 5), purchased_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), PRIMARY KEY(telegram_id,club_id))`),pool.query(`CREATE TABLE IF NOT EXISTS player_charity_donations (id BIGSERIAL PRIMARY KEY,telegram_id TEXT NOT NULL,currency TEXT NOT NULL DEFAULT 'RUB' CHECK(currency='RUB'),amount NUMERIC(24,0) NOT NULL CHECK(amount>0),created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`) ]).then(async()=>{await pool.query('ALTER TABLE player_football_clubs DROP CONSTRAINT IF EXISTS player_football_clubs_currency_check');await pool.query("UPDATE player_football_clubs SET currency='RUB' WHERE currency<>'RUB'");await pool.query("ALTER TABLE player_football_clubs ADD CONSTRAINT player_football_clubs_currency_check CHECK(currency='RUB')");return pool.query(`CREATE INDEX IF NOT EXISTS player_charity_donations_player_idx ON player_charity_donations(telegram_id)`);});
 const featureTablesReady = bansReady.then(()=>pool.query(`
  CREATE TABLE IF NOT EXISTS player_expense_bills (
    id BIGSERIAL PRIMARY KEY,
@@ -125,30 +125,23 @@ async function getState(client,id,applyIncome=true) {
   const charityRow=await client.query('SELECT COALESCE(SUM(amount),0) AS total FROM player_charity_donations WHERE telegram_id=$1',[id]);
   const charityDonatedRub=Number(charityRow.rows[0]?.total||0);
   const clubRows=(await client.query('SELECT club_id,currency,level FROM player_football_clubs WHERE telegram_id=$1',[id])).rows;
-  const footballClubs=clubRows.map(x=>({id:x.club_id,currency:x.currency,level:Number(x.level)}));
+  const footballClubs=clubRows.map(x=>({id:x.club_id,currency:'RUB',level:Number(x.level)}));
   const purchasedUpgradeIds=up.rows.map(x=>x.upgrade_id);
   const effectiveTapReward=purchasedUpgradeIds.includes('tap4')?400:purchasedUpgradeIds.includes('tap3')?300:purchasedUpgradeIds.includes('tap2')?200:100;
   if(Number(p.tap_reward)!==effectiveTapReward){await client.query('UPDATE players SET tap_reward=$2 WHERE telegram_id=$1',[id,effectiveTapReward]);p.tap_reward=effectiveTapReward;}
   const levels=Object.fromEntries(assets.rows.map(x=>[x.asset_id,x.level]));
   const income=assets.rows.reduce((sum,x)=>{const a=ALL_ASSETS.find(z=>z.id===x.asset_id);return sum+(a?getIncome(a,x.level):0)},0);
-  const clubIncome={USD:0,EUR:0};
+  const clubIncome={RUB:0};
   for(const row of clubRows){
     const club=FOOTBALL_CLUBS.find(x=>x.id===row.club_id);
-    if(club&&['USD','EUR'].includes(row.currency)){
-      clubIncome[row.currency]+=Math.floor(club.income*(1+Number(row.level)*0.25)*2.5);
-    }
+    if(club) clubIncome.RUB+=Math.floor(club.income*(1+Number(row.level)*0.25)*2.5);
   }
   if(applyIncome){
     const elapsed=Math.min(MAX_OFFLINE_MINUTES,Math.max(0,(Date.now()-new Date(p.last_income_at).getTime())/60000));
     const earned=Math.floor(income*elapsed);
-    const earnedUsd=Math.floor(clubIncome.USD*elapsed*100)/100;
-    const earnedEur=Math.floor(clubIncome.EUR*elapsed*100)/100;
-    await client.query('UPDATE players SET balance=balance+$2,last_income_at=NOW(),updated_at=NOW() WHERE telegram_id=$1',[id,earned]);
-    if(earnedUsd>0||earnedEur>0){
-      await client.query('UPDATE player_bank_accounts SET usd=usd+$2,eur=eur+$3 WHERE telegram_id=$1',[id,earnedUsd,earnedEur]);
-      bank.usd+=earnedUsd;bank.eur+=earnedEur;
-    }
-    p.balance=Number(p.balance)+earned;
+    const earnedClubRub=Math.floor(clubIncome.RUB*elapsed);
+    await client.query('UPDATE players SET balance=balance+$2,last_income_at=NOW(),updated_at=NOW() WHERE telegram_id=$1',[id,earned+earnedClubRub]);
+    p.balance=Number(p.balance)+earned+earnedClubRub;
   }
   return { player:{telegramId:String(p.telegram_id),username:p.username,firstName:p.first_name,balance:Number(p.balance),taps:Number(p.taps),tapReward:p.tap_reward}, charityDonatedRub, owned:assets.rows.map(x=>x.asset_id), purchasedUpgrades:up.rows.map(x=>x.upgrade_id), propertyLevels:levels, passiveIncome:income, bank, footballClubs, clubPassiveIncome:clubIncome, caseTokens:Number(caseRow.rows[0]?.tokens||0), uniqueItems:Object.fromEntries(uniqueRows.rows.map(x=>[x.item_id,Number(x.quantity)])), globalTapBoost:boostRow.rows[0]?{active:boostRow.rows[0].active===true,multiplier:Number(boostRow.rows[0].tap_multiplier),expiresAt:boostRow.rows[0].expires_at}:{active:false,multiplier:1,expiresAt:null} };
 }
@@ -226,7 +219,7 @@ app.get('/api/expenses/state',auth,async(req,res,next)=>{try{
   const assets=(await c.query("SELECT asset_id FROM player_assets WHERE telegram_id=$1",[req.playerId])).rows;
   const assetIds=assets.map(x=>x.asset_id);
   const hasFactory=assetIds.includes('biz47')||assetIds.includes('biz53');
-  const clubs=(await c.query("SELECT club_id,currency,level FROM player_football_clubs WHERE telegram_id=$1",[req.playerId])).rows;
+  const clubs=(await c.query("SELECT club_id,level FROM player_football_clubs WHERE telegram_id=$1",[req.playerId])).rows;
   const ownedValue=assets.reduce((sum,x)=>{const a=ALL_ASSETS.find(z=>z.id===x.asset_id);return sum+(a?Number(a.cost)||0:0)},0);
   const utility=Math.min(500000000,Math.max(5000,Math.floor(playerBalance*0.0003+ownedValue*0.00008)));
   await add('utilities',utility,'Коммунальные платежи за предприятия и недвижимость');
@@ -237,7 +230,7 @@ app.get('/api/expenses/state',auth,async(req,res,next)=>{try{
    await add('tax',tax,'Начисление по результатам налоговой проверки');
   }
   if(clubs.length&&!created.has('club_upkeep')){
-   const clubCosts=clubs.reduce((sum,row)=>{const club=FOOTBALL_CLUBS.find(x=>x.id===row.club_id);if(!club)return sum;const price=row.currency==='EUR'?club.costEur*98:club.costUsd*90;return sum+price*(1+Number(row.level)*0.25)},0);
+   const clubCosts=clubs.reduce((sum,row)=>{const club=FOOTBALL_CLUBS.find(x=>x.id===row.club_id);if(!club)return sum;return sum+club.costRub*(1+Number(row.level)*0.25)},0);
    const upkeep=Math.max(100000,Math.floor(clubCosts*0.000002));
    await add('club_upkeep',upkeep,'Содержание футбольных клубов, стадионов и персонала');
   }
@@ -512,25 +505,24 @@ app.post('/api/bank/exchange',auth,async(req,res,next)=>{try{
  });res.json(state);
  }catch(e){next(e)}});
 app.post('/api/game/buy-club',auth,async(req,res,next)=>{try{
- const club=FOOTBALL_CLUBS.find(x=>x.id===req.body?.clubId),currency=String(req.body?.currency||'USD');
- if(!club||!['USD','EUR'].includes(currency))throw Object.assign(new Error('Неизвестный клуб или валюта.'),{status:400});
- const cost=currency==='USD'?club.costUsd:club.costEur;
- const state=await transaction(async c=>{await getState(c,req.playerId);await c.query('INSERT INTO player_bank_accounts(telegram_id) VALUES($1) ON CONFLICT DO NOTHING',[req.playerId]);const col=currency.toLowerCase();
- const debit=await c.query('UPDATE player_bank_accounts SET '+col+'='+col+'-$2 WHERE telegram_id=$1 AND '+col+' >= $2 RETURNING '+col,[req.playerId,cost]);
- if(!debit.rowCount)throw Object.assign(new Error('Недостаточно '+currency+' в банке.'),{status:400});
- await c.query('INSERT INTO player_football_clubs(telegram_id,club_id,currency) VALUES($1,$2,$3)',[req.playerId,club.id,currency]);return getState(c,req.playerId,false);
+ const club=FOOTBALL_CLUBS.find(x=>x.id===req.body?.clubId);
+ if(!club)throw Object.assign(new Error('Неизвестный клуб.'),{status:400});
+ const state=await transaction(async c=>{await getState(c,req.playerId);
+ const debit=await c.query('UPDATE players SET balance=balance-$2 WHERE telegram_id=$1 AND balance >= $2 RETURNING balance',[req.playerId,club.costRub]);
+ if(!debit.rowCount)throw Object.assign(new Error('Недостаточно игровых рублей.'),{status:400});
+ await c.query("INSERT INTO player_football_clubs(telegram_id,club_id,currency) VALUES($1,$2,'RUB')",[req.playerId,club.id]);return getState(c,req.playerId,false);
  });res.json(state);
  }catch(e){next(e)}});
 app.post('/api/game/sell-club',auth,async(req,res,next)=>{try{
  const club=FOOTBALL_CLUBS.find(x=>x.id===req.body?.clubId);if(!club)throw Object.assign(new Error('Неизвестный клуб.'),{status:400});
- const state=await transaction(async c=>{const row=(await c.query('SELECT currency,level FROM player_football_clubs WHERE telegram_id=$1 AND club_id=$2 FOR UPDATE',[req.playerId,club.id])).rows[0];if(!row)throw Object.assign(new Error('Клуб не принадлежит тебе.'),{status:400});
- const cost=row.currency==='USD'?club.costUsd:club.costEur;const refund=Math.floor(cost*.7);await c.query('DELETE FROM player_football_clubs WHERE telegram_id=$1 AND club_id=$2',[req.playerId,club.id]);await c.query('UPDATE player_bank_accounts SET '+row.currency.toLowerCase()+'='+row.currency.toLowerCase()+'+$2 WHERE telegram_id=$1',[req.playerId,refund]);return getState(c,req.playerId,false);
+ const state=await transaction(async c=>{const row=(await c.query('SELECT level FROM player_football_clubs WHERE telegram_id=$1 AND club_id=$2 FOR UPDATE',[req.playerId,club.id])).rows[0];if(!row)throw Object.assign(new Error('Клуб не принадлежит тебе.'),{status:400});
+ const refund=Math.floor(club.costRub*.7);await c.query('DELETE FROM player_football_clubs WHERE telegram_id=$1 AND club_id=$2',[req.playerId,club.id]);await c.query('UPDATE players SET balance=balance+$2 WHERE telegram_id=$1',[req.playerId,refund]);return getState(c,req.playerId,false);
  });res.json(state);
  }catch(e){next(e)}});
 app.post('/api/game/upgrade-club',auth,async(req,res,next)=>{try{
  const club=FOOTBALL_CLUBS.find(x=>x.id===req.body?.clubId);if(!club)throw Object.assign(new Error('Неизвестный клуб.'),{status:400});
- const state=await transaction(async c=>{const row=(await c.query('SELECT currency,level FROM player_football_clubs WHERE telegram_id=$1 AND club_id=$2 FOR UPDATE',[req.playerId,club.id])).rows[0];if(!row)throw Object.assign(new Error('Сначала приобрети клуб.'),{status:400});if(Number(row.level)>=5)throw Object.assign(new Error('У клуба максимальный уровень.'),{status:400});
- const base=row.currency==='USD'?club.costUsd:club.costEur,fee=Math.max(1,Math.floor(base*.2));const col=row.currency.toLowerCase();const debit=await c.query('UPDATE player_bank_accounts SET '+col+'='+col+'-$2 WHERE telegram_id=$1 AND '+col+' >= $2 RETURNING '+col,[req.playerId,fee]);if(!debit.rowCount)throw Object.assign(new Error('Недостаточно средств в банке.'),{status:400});
+ const state=await transaction(async c=>{const row=(await c.query('SELECT level FROM player_football_clubs WHERE telegram_id=$1 AND club_id=$2 FOR UPDATE',[req.playerId,club.id])).rows[0];if(!row)throw Object.assign(new Error('Сначала приобрети клуб.'),{status:400});if(Number(row.level)>=5)throw Object.assign(new Error('У клуба максимальный уровень.'),{status:400});
+ const fee=Math.max(1,Math.floor(club.costRub*.2));const debit=await c.query('UPDATE players SET balance=balance-$2 WHERE telegram_id=$1 AND balance >= $2 RETURNING balance',[req.playerId,fee]);if(!debit.rowCount)throw Object.assign(new Error('Недостаточно игровых рублей.'),{status:400});
  await c.query('UPDATE player_football_clubs SET level=level+1 WHERE telegram_id=$1 AND club_id=$2',[req.playerId,club.id]);return getState(c,req.playerId,false);
  });res.json(state);
  }catch(e){next(e)}});
@@ -581,9 +573,8 @@ app.get('/api/leaderboard',auth,async(req,res,next)=>{try{
  const clubValues=new Map(FOOTBALL_CLUBS.map(c=>[c.id,c]));
  for(const row of clubRows.rows){
   const club=clubValues.get(row.club_id);if(!club)continue;
-  const base=row.currency==='USD'?Number(club.costUsd):Number(club.costEur);
-  const rate=row.currency==='USD'?90:98;
-  add(row.telegram_id,(base+Number(row.level||0)*Math.max(1,Math.floor(base*.2)))*rate);
+  const base=Number(club.costRub)||0;
+  add(row.telegram_id,base+Number(row.level||0)*Math.max(1,Math.floor(base*.2)));
  }
  for(const row of bankRows.rows) add(row.telegram_id,Number(row.usd||0)*90+Number(row.eur||0)*98);
  const snapshot=getMarketSnapshot(),prices=new Map(snapshot.assets.map(a=>[a.id,Number(a.price)||0]));
