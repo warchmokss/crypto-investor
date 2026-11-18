@@ -126,6 +126,9 @@ async function getState(client,id,applyIncome=true) {
   const charityDonatedRub=Number(charityRow.rows[0]?.total||0);
   const clubRows=(await client.query('SELECT club_id,currency,level FROM player_football_clubs WHERE telegram_id=$1',[id])).rows;
   const footballClubs=clubRows.map(x=>({id:x.club_id,currency:x.currency,level:Number(x.level)}));
+  const purchasedUpgradeIds=up.rows.map(x=>x.upgrade_id);
+  const effectiveTapReward=purchasedUpgradeIds.includes('tap4')?400:purchasedUpgradeIds.includes('tap3')?300:purchasedUpgradeIds.includes('tap2')?200:100;
+  if(Number(p.tap_reward)!==effectiveTapReward){await client.query('UPDATE players SET tap_reward=$2 WHERE telegram_id=$1',[id,effectiveTapReward]);p.tap_reward=effectiveTapReward;}
   const levels=Object.fromEntries(assets.rows.map(x=>[x.asset_id,x.level]));
   const income=assets.rows.reduce((sum,x)=>{const a=ALL_ASSETS.find(z=>z.id===x.asset_id);return sum+(a?getIncome(a,x.level):0)},0);
   const clubIncome={USD:0,EUR:0};
@@ -184,7 +187,7 @@ app.post('/api/auth/telegram', async (req,res,next)=>{ try {
         await c.query('DELETE FROM player_referrals WHERE referred_telegram_id=$1',[user.id]);
       }
     }
-    await c.query('UPDATE players SET tap_reward=300 WHERE telegram_id=$1 AND tap_reward=50 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)',[user.id]);
+    await c.query('UPDATE players SET tap_reward=100 WHERE telegram_id=$1 AND NOT EXISTS (SELECT 1 FROM player_upgrades WHERE telegram_id=$1)',[user.id]);
   });
   res.json({ token:makeSession(user), referralReward });
  } catch(e){next(Object.assign(e,{status:401}));} });
